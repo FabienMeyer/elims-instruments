@@ -1,0 +1,101 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"   # triggers on v1.0.0, v0.2.3, etc.
+
+permissions:
+  contents: read
+  id-token: write   # needed for OIDC PyPI trusted publishing
+  pages: write      # needed for GitHub Pages deployment
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Gate: full CI must pass before we publish anything
+  # ─────────────────────────────────────────────────────────────────────────
+  ci-gate:
+    name: Run full CI
+    uses: ./.github/workflows/ci.yml  # ci.yml is the reusable CI workflow
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Build distribution artefacts
+  # ─────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    needs: ci-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Build wheel and sdist
+        run: uv build
+
+      - name: Upload dist artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Publish to PyPI via OIDC trusted publishing
+  # (configure the trusted publisher once on pypi.org — no API token needed)
+  # ─────────────────────────────────────────────────────────────────────────
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: build
+    environment: pypi   # requires manual approval in GitHub Environments
+    steps:
+      - name: Download dist artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # No username/password needed — uses OIDC trusted publishing
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Deploy docs to GitHub Pages
+  # ─────────────────────────────────────────────────────────────────────────
+  deploy-docs:
+    name: Deploy docs to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: publish-pypi
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Build docs
+        run: uv run mkdocs build --strict
+
+      - name: Upload Pages artefact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
