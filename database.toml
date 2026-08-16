@@ -1,0 +1,4 @@
+# SQLAlchemy database configuration used by InstrumentCrud.
+[database]
+url = "sqlite:///instruments.db"
+echo = false
