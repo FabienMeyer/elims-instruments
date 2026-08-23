@@ -1,0 +1,13 @@
+[database]
+url = "sqlite:///instruments.db"
+echo = false
+
+[instruments]
+primary_dmm = "DMM-001"
+frequency_counter = "CNT-001"
+
+[boards]
+characterization_board = "BRD-001"
+
+[duts]
+characterized_ic = "DUT-001"

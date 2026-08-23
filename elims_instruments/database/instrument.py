@@ -3,27 +3,20 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated
 
-from pydantic import TypeAdapter
-from sqlalchemy import Column
-from sqlmodel import Field, Session, SQLModel, select
+from pydantic import StringConstraints, TypeAdapter
+from sqlalchemy import Column, Enum
+from sqlmodel import Field, SQLModel
 
-from .crud import Crud
 from .connections import (
     Connection,
-    ConnectionKind,
     ConnectionType,
-    SocketConnection,
-    VisaConnection,
 )
+from .crud import Crud, DebugLogger
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
-    from logging import Logger
     from pathlib import Path
-
-    from sqlalchemy.engine.interfaces import Dialect
 
 
 # Connection models come from database.connections
@@ -32,9 +25,24 @@ if TYPE_CHECKING:
 _RAW_INSTRUMENT_LIST_ADAPTER: TypeAdapter[list[dict[str, object]]] = TypeAdapter(
     list[dict[str, object]]
 )
+NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+AssetTag = Annotated[str, StringConstraints(strip_whitespace=True, min_length=5)]
 
-# reuse ConnectionType and adapters from connections.py via imports
-_CONNECTION_ADAPTER: TypeAdapter[Connection] = TypeAdapter(Connection)
+
+class InstrumentType(StrEnum):
+    """Supported laboratory instrument categories."""
+
+    COUNTER = "counter"
+    MULTIMETER = "multimeter"
+    OSCILLOSCOPE = "oscilloscope"
+
+
+_INSTRUMENT_TYPE_DB = Enum(
+    InstrumentType,
+    values_callable=lambda enum: [member.value for member in enum],
+    native_enum=False,
+    validate_strings=True,
+)
 
 
 class InstrumentModel(SQLModel, table=True):
@@ -42,18 +50,21 @@ class InstrumentModel(SQLModel, table=True):
 
     __tablename__ = "instruments"
 
-    id: str = Field(primary_key=True, min_length=1)
-    type: str = Field(min_length=1, index=True)
-    maker: str = Field(min_length=1)
-    model: str = Field(min_length=1)
-    serial_number: str | None = Field(default=None, index=True)
+    id: NonEmptyString = Field(primary_key=True)
+    asset_tag: AssetTag = Field(unique=True, index=True)
+    type: InstrumentType = Field(
+        sa_column=Column(_INSTRUMENT_TYPE_DB, nullable=False, index=True)
+    )
+    maker: NonEmptyString
+    model: NonEmptyString
+    serial_number: NonEmptyString | None = Field(default=None, index=True)
     connection: Connection = Field(
         sa_column=Column(ConnectionType(), nullable=False),
     )
 
 
-def validate_instrument_list(raw_data: object) -> list[InstrumentModel]:
-    """Validate raw instrument mappings and their discriminated connections.
+def parse_instrument_list(raw_data: object) -> list[InstrumentModel]:
+    """Parse raw instrument mappings into validated models.
 
     Args:
         raw_data: Untrusted decoded data, typically loaded from YAML or JSON.
@@ -61,15 +72,10 @@ def validate_instrument_list(raw_data: object) -> list[InstrumentModel]:
     Returns:
         Fully validated instrument table models.
     """
+    # SQLModel table construction skips Pydantic's required-field validation.
+    # Validate each raw mapping explicitly to keep imports strict.
     records = _RAW_INSTRUMENT_LIST_ADAPTER.validate_python(raw_data)
-    instruments: list[InstrumentModel] = []
-    for record in records:
-        values = dict(record)
-        values["connection"] = _CONNECTION_ADAPTER.validate_python(
-            values.get("connection")
-        )
-        instruments.append(InstrumentModel.model_validate(values))
-    return instruments
+    return [InstrumentModel.model_validate(record) for record in records]
 
 
 class InstrumentCrud(Crud[InstrumentModel]):
@@ -77,7 +83,7 @@ class InstrumentCrud(Crud[InstrumentModel]):
 
     def __init__(
         self,
-        logger: Logger,
+        logger: DebugLogger,
         toml_path: Path,
         *,
         create_tables: bool = True,
@@ -89,80 +95,3 @@ class InstrumentCrud(Crud[InstrumentModel]):
             InstrumentModel,
             create_tables=create_tables,
         )
-
-    def update_by_id(
-        self,
-        instrument_id: str,
-        changes: Mapping[str, object],
-    ) -> InstrumentModel | None:
-        """Atomically update an instrument selected by its ID.
-
-        Args:
-            instrument_id: ID of the instrument to update.
-            changes: Instrument fields and their replacement values.
-
-        Returns:
-            The updated instrument, or ``None`` when the ID does not exist.
-        """
-        invalid_fields = set(changes) - set(InstrumentModel.model_fields)
-        if invalid_fields:
-            fields = ", ".join(sorted(invalid_fields))
-            raise ValueError(f"Unknown InstrumentModel fields: {fields}")
-        if "id" in changes:
-            raise ValueError("The instrument ID cannot be changed")
-
-        statement = select(InstrumentModel).where(InstrumentModel.id == instrument_id)
-        with Session(self.engine) as session:
-            instrument = session.exec(statement).first()
-            if instrument is None:
-                return None
-
-            values = instrument.model_dump()
-            values.update(changes)
-            validated = InstrumentModel.model_validate(values)
-            for field in changes:
-                setattr(instrument, field, getattr(validated, field))
-            session.add(instrument)
-            session.commit()
-            session.refresh(instrument)
-            return instrument
-
-    def upsert_many(
-        self,
-        instruments: Sequence[InstrumentModel],
-    ) -> tuple[int, int]:
-        """Insert missing instruments and replace existing records by ID.
-
-        All records are applied in one transaction. Existing records receive every
-        field from the supplied model, including ``None`` values.
-
-        Args:
-            instruments: Fully validated instrument records to apply.
-
-        Returns:
-            A ``(created, updated)`` count tuple.
-
-        Raises:
-            ValueError: If the input contains a duplicate instrument ID.
-        """
-        identifiers = [instrument.id for instrument in instruments]
-        if len(identifiers) != len(set(identifiers)):
-            raise ValueError("The instrument list contains duplicate IDs")
-
-        created = 0
-        updated = 0
-        with Session(self.engine) as session:
-            for incoming in instruments:
-                stored = session.get(InstrumentModel, incoming.id)
-                if stored is None:
-                    session.add(incoming)
-                    created += 1
-                    continue
-
-                for field in InstrumentModel.model_fields:
-                    if field != "id":
-                        setattr(stored, field, getattr(incoming, field))
-                session.add(stored)
-                updated += 1
-            session.commit()
-        return created, updated

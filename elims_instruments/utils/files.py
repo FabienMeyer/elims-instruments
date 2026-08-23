@@ -1,7 +1,7 @@
 """Files module."""
 
 import dataclasses
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 from elims_instruments.utils.timestamp import Timestamp
@@ -11,7 +11,7 @@ from elims_instruments.utils.timestamp import Timestamp
 class FileHelper:
     """File helper."""
 
-    class FileSuffix(str, Enum):
+    class FileSuffix(StrEnum):
         """File suffix."""
 
         LOG = ".log"

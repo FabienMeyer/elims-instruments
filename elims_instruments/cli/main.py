@@ -2,8 +2,10 @@
 
 import typer
 
-from .instruments import app as instruments_app
 from .boards import app as boards_app
+from .database import app as database_app
+from .duts import app as duts_app
+from .instruments import app as instruments_app
 
 app = typer.Typer(
     name="elims",
@@ -12,3 +14,5 @@ app = typer.Typer(
 )
 app.add_typer(instruments_app, name="instruments")
 app.add_typer(boards_app, name="boards")
+app.add_typer(duts_app, name="duts")
+app.add_typer(database_app, name="database")

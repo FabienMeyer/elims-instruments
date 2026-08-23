@@ -14,3 +14,21 @@ def test_root_cli_registers_instruments_module() -> None:
     assert result.exit_code == 0
     assert "Manage the ELIMS instrument database" in result.output
     assert "sync" in result.output
+
+
+def test_root_cli_registers_duts_module() -> None:
+    """The root CLI exposes DUT database commands."""
+    result = CliRunner().invoke(root_app, ["duts", "--help"])
+
+    assert result.exit_code == 0
+    assert "Manage the ELIMS DUT database" in result.output
+    assert "sync" in result.output
+
+
+def test_root_cli_registers_database_module() -> None:
+    """The root CLI exposes schema migration commands."""
+    result = CliRunner().invoke(root_app, ["database", "--help"])
+
+    assert result.exit_code == 0
+    assert "Manage the ELIMS database schema" in result.output
+    assert "upgrade" in result.output

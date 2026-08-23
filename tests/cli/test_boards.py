@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def configuration(tmp_path: Path) -> Path:
-    path = tmp_path / "database.toml"
+    path = tmp_path / "bench.toml"
     database = (tmp_path / "boards.db").as_posix()
     path.write_text(
         f'[database]\nurl = "sqlite:///{database}"\necho = false\n',
@@ -35,6 +35,8 @@ def test_cli_crud_lifecycle(configuration: Path) -> None:
         [
             "add",
             "board-1",
+            "--asset-tag",
+            "BOARD-001",
             "--type",
             "controller",
             "--maker",
@@ -59,7 +61,10 @@ def test_cli_crud_lifecycle(configuration: Path) -> None:
     assert listed.exit_code == 0
     assert len(json.loads(listed.stdout)) == 1
 
-    updated = runner.invoke(app, ["update", "board-1", "--model", "CTRL-2", *common])
+    updated = runner.invoke(
+        app,
+        ["update", "BOARD-001", "--model", "CTRL-2", *common],
+    )
     assert updated.exit_code == 0
     assert json.loads(updated.stdout)["model"] == "CTRL-2"
 
@@ -74,6 +79,8 @@ def test_add_rejects_incomplete_socket_connection(configuration: Path) -> None:
         [
             "add",
             "board-1",
+            "--asset-tag",
+            "BOARD-001",
             "--type",
             "controller",
             "--maker",
@@ -100,6 +107,8 @@ def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:
         [
             "add",
             "board-1",
+            "--asset-tag",
+            "BOARD-001",
             "--type",
             "controller",
             "--maker",
@@ -124,11 +133,17 @@ def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:
     records.append(
         {
             "id": "dev-1",
+            "asset_tag": "BOARD-002",
             "type": "sensor",
             "maker": "Acme",
             "model": "SEN-1",
             "serial_number": None,
-            "connection": {"kind": "usb", "vendor_id": 1, "product_id": 2, "timeout_seconds": 10.0},
+            "connection": {
+                "kind": "usb",
+                "vendor_id": 1,
+                "product_id": 2,
+                "timeout_seconds": 10.0,
+            },
         }
     )
     yaml_path.write_text(yaml.safe_dump(records), encoding="utf-8")
