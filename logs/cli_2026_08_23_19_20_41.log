@@ -1,0 +1,169 @@
+2026-08-23 19:20:41.409 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:20:41.493 | DEBUG    | cli              | elims_instruments.database.crud:add:119 - add
+2026-08-23 19:20:41.506 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:20:41.507 | DEBUG    | cli              | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:41.512 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:20:41.512 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:106 - fetchall
+2026-08-23 19:20:41.517 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:20:41.528 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:20:41.529 | DEBUG    | cli              | elims_instruments.database.crud:remove:136 - remove
+2026-08-23 19:20:41.541 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_export_and_sync_yaml0\bench.toml
+2026-08-23 19:20:41.625 | DEBUG    | cli              | elims_instruments.database.crud:add:119 - add
+2026-08-23 19:20:41.637 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_export_and_sync_yaml0\bench.toml
+2026-08-23 19:20:41.638 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:106 - fetchall
+2026-08-23 19:20:41.646 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_export_and_sync_yaml0\bench.toml
+2026-08-23 19:20:41.838 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:142 - Loading bench from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_drive0\bench.toml
+2026-08-23 19:20:41.838 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_configuration:71 - Reading bench configuration from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_drive0\bench.toml
+2026-08-23 19:20:41.838 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench instruments from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_drive0\bench.toml
+2026-08-23 19:20:41.839 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench instruments assignment primary_dmm -> DMM-001
+2026-08-23 19:20:41.839 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench instruments assignment counter -> CNT-001
+2026-08-23 19:20:41.839 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 2 bench instruments
+2026-08-23 19:20:41.839 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench boards from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_drive0\bench.toml
+2026-08-23 19:20:41.839 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench duts from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_drive0\bench.toml
+2026-08-23 19:20:41.839 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:105 - Creating 2 instrument drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_drive0\bench.toml
+2026-08-23 19:20:41.839 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument primary_dmm from asset DMM-001
+2026-08-23 19:20:41.840 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:41.840 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:48 - Selecting driver for asset DMM-001 with type multimeter
+2026-08-23 19:20:41.840 | DEBUG    | elims_instruments.intruments.multimeter.factory | elims_instruments.intruments.multimeter.factory:create:67 - Creating Keysight34401A driver for multimeter asset DMM-001
+2026-08-23 19:20:41.840 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:41.840 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:61 - Created Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:41.840 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument counter from asset CNT-001
+2026-08-23 19:20:41.840 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:41.841 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:48 - Selecting driver for asset CNT-001 with type counter
+2026-08-23 19:20:41.841 | DEBUG    | elims_instruments.intruments.counter.factory | elims_instruments.intruments.counter.factory:create:67 - Creating Keysight53220A driver for counter asset CNT-001
+2026-08-23 19:20:41.841 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight53220A driver for asset CNT-001
+2026-08-23 19:20:41.841 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:61 - Created Keysight53220A driver for asset CNT-001
+2026-08-23 19:20:41.841 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:122 - Created 2 instrument drivers
+2026-08-23 19:20:41.841 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:86 - Creating 0 board drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_drive0\bench.toml
+2026-08-23 19:20:41.842 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:103 - Created 0 board drivers
+2026-08-23 19:20:41.842 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:87 - Creating 0 DUTs using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_drive0\bench.toml
+2026-08-23 19:20:41.842 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:93 - Created 0 DUTs
+2026-08-23 19:20:41.842 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:165 - Loaded bench with 2 instruments, 0 boards, and 0 DUTs
+2026-08-23 19:20:41.951 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:142 - Loading bench from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_board0\bench.toml
+2026-08-23 19:20:41.951 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_configuration:71 - Reading bench configuration from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_board0\bench.toml
+2026-08-23 19:20:41.952 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench instruments from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_board0\bench.toml
+2026-08-23 19:20:41.952 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench instruments assignment primary_dmm -> DMM-001
+2026-08-23 19:20:41.952 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench instruments
+2026-08-23 19:20:41.952 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench boards from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_board0\bench.toml
+2026-08-23 19:20:41.952 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench boards assignment characterization_board -> BRD-001
+2026-08-23 19:20:41.952 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench boards
+2026-08-23 19:20:41.952 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench duts from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_board0\bench.toml
+2026-08-23 19:20:41.952 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:105 - Creating 1 instrument drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_board0\bench.toml
+2026-08-23 19:20:41.952 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument primary_dmm from asset DMM-001
+2026-08-23 19:20:41.953 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:41.953 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:48 - Selecting driver for asset DMM-001 with type multimeter
+2026-08-23 19:20:41.953 | DEBUG    | elims_instruments.intruments.multimeter.factory | elims_instruments.intruments.multimeter.factory:create:67 - Creating Keysight34401A driver for multimeter asset DMM-001
+2026-08-23 19:20:41.953 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:41.953 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:61 - Created Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:41.953 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:122 - Created 1 instrument drivers
+2026-08-23 19:20:41.953 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:86 - Creating 1 board drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_board0\bench.toml
+2026-08-23 19:20:41.954 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:95 - Resolving board characterization_board from asset BRD-001
+2026-08-23 19:20:41.954 | DEBUG    | elims_instruments.boards.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:41.955 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create:43 - Creating Board driver for board asset BRD-001
+2026-08-23 19:20:41.955 | DEBUG    | elims_instruments.boards.abstract | elims_instruments.boards.abstract:__init__:20 - Initialized Board driver for board asset BRD-001
+2026-08-23 19:20:41.955 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:103 - Created 1 board drivers
+2026-08-23 19:20:41.955 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:87 - Creating 0 DUTs using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_board0\bench.toml
+2026-08-23 19:20:41.955 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:93 - Created 0 DUTs
+2026-08-23 19:20:41.955 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:165 - Loaded bench with 1 instruments, 1 boards, and 0 DUTs
+2026-08-23 19:20:42.066 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:142 - Loading bench from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_dut0\bench.toml
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_configuration:71 - Reading bench configuration from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_dut0\bench.toml
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench instruments from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_dut0\bench.toml
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench instruments assignment primary_dmm -> DMM-001
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench instruments
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench boards from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_dut0\bench.toml
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench boards assignment characterization_board -> BRD-001
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench boards
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench duts from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_dut0\bench.toml
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench duts assignment characterized_ic -> DUT-001
+2026-08-23 19:20:42.066 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench duts
+2026-08-23 19:20:42.066 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:105 - Creating 1 instrument drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_dut0\bench.toml
+2026-08-23 19:20:42.067 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument primary_dmm from asset DMM-001
+2026-08-23 19:20:42.067 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:42.068 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:48 - Selecting driver for asset DMM-001 with type multimeter
+2026-08-23 19:20:42.068 | DEBUG    | elims_instruments.intruments.multimeter.factory | elims_instruments.intruments.multimeter.factory:create:67 - Creating Keysight34401A driver for multimeter asset DMM-001
+2026-08-23 19:20:42.068 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:42.068 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:61 - Created Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:42.068 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:122 - Created 1 instrument drivers
+2026-08-23 19:20:42.068 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:86 - Creating 1 board drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_dut0\bench.toml
+2026-08-23 19:20:42.069 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:95 - Resolving board characterization_board from asset BRD-001
+2026-08-23 19:20:42.069 | DEBUG    | elims_instruments.boards.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:42.070 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create:43 - Creating Board driver for board asset BRD-001
+2026-08-23 19:20:42.070 | DEBUG    | elims_instruments.boards.abstract | elims_instruments.boards.abstract:__init__:20 - Initialized Board driver for board asset BRD-001
+2026-08-23 19:20:42.070 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:103 - Created 1 board drivers
+2026-08-23 19:20:42.070 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:87 - Creating 1 DUTs using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_creates_named_dut0\bench.toml
+2026-08-23 19:20:42.071 | DEBUG    | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:100 - Resolving DUT characterized_ic from asset DUT-001
+2026-08-23 19:20:42.071 | DEBUG    | elims_instruments.duts.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:42.072 | DEBUG    | elims_instruments.duts.factory | elims_instruments.duts.factory:create:44 - Creating Dut for DUT asset DUT-001
+2026-08-23 19:20:42.072 | DEBUG    | elims_instruments.duts.abstract | elims_instruments.duts.abstract:__init__:19 - Initialized Dut for DUT asset DUT-001
+2026-08-23 19:20:42.072 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:108 - Created 1 DUTs
+2026-08-23 19:20:42.072 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:165 - Loaded bench with 1 instruments, 1 boards, and 1 DUTs
+2026-08-23 19:20:42.185 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:142 - Loading bench from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_reads_configuration0\bench.toml
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_configuration:71 - Reading bench configuration from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_reads_configuration0\bench.toml
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench instruments from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_reads_configuration0\bench.toml
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench instruments assignment primary_dmm -> DMM-001
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench instruments
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench boards from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_reads_configuration0\bench.toml
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench boards assignment characterization_board -> BRD-001
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench boards
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench duts from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_reads_configuration0\bench.toml
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench duts assignment characterized_ic -> DUT-001
+2026-08-23 19:20:42.185 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench duts
+2026-08-23 19:20:42.185 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:105 - Creating 1 instrument drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_reads_configuration0\bench.toml
+2026-08-23 19:20:42.186 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument primary_dmm from asset DMM-001
+2026-08-23 19:20:42.186 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:42.186 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:48 - Selecting driver for asset DMM-001 with type multimeter
+2026-08-23 19:20:42.187 | DEBUG    | elims_instruments.intruments.multimeter.factory | elims_instruments.intruments.multimeter.factory:create:67 - Creating Keysight34401A driver for multimeter asset DMM-001
+2026-08-23 19:20:42.187 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:42.187 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:61 - Created Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:42.187 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:122 - Created 1 instrument drivers
+2026-08-23 19:20:42.187 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:86 - Creating 1 board drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_reads_configuration0\bench.toml
+2026-08-23 19:20:42.187 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:95 - Resolving board characterization_board from asset BRD-001
+2026-08-23 19:20:42.188 | DEBUG    | elims_instruments.boards.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:42.188 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create:43 - Creating Board driver for board asset BRD-001
+2026-08-23 19:20:42.188 | DEBUG    | elims_instruments.boards.abstract | elims_instruments.boards.abstract:__init__:20 - Initialized Board driver for board asset BRD-001
+2026-08-23 19:20:42.188 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:103 - Created 1 board drivers
+2026-08-23 19:20:42.188 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:87 - Creating 1 DUTs using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_reads_configuration0\bench.toml
+2026-08-23 19:20:42.189 | DEBUG    | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:100 - Resolving DUT characterized_ic from asset DUT-001
+2026-08-23 19:20:42.189 | DEBUG    | elims_instruments.duts.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:42.190 | DEBUG    | elims_instruments.duts.factory | elims_instruments.duts.factory:create:44 - Creating Dut for DUT asset DUT-001
+2026-08-23 19:20:42.190 | DEBUG    | elims_instruments.duts.abstract | elims_instruments.duts.abstract:__init__:19 - Initialized Dut for DUT asset DUT-001
+2026-08-23 19:20:42.190 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:108 - Created 1 DUTs
+2026-08-23 19:20:42.190 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:165 - Loaded bench with 1 instruments, 1 boards, and 1 DUTs
+2026-08-23 19:20:42.301 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:142 - Loading bench from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_without_board_table0\bench.toml
+2026-08-23 19:20:42.301 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_configuration:71 - Reading bench configuration from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_without_board_table0\bench.toml
+2026-08-23 19:20:42.301 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench instruments from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_without_board_table0\bench.toml
+2026-08-23 19:20:42.301 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench instruments assignment primary_dmm -> DMM-001
+2026-08-23 19:20:42.301 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench instruments
+2026-08-23 19:20:42.301 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench boards from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_without_board_table0\bench.toml
+2026-08-23 19:20:42.301 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench duts from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_without_board_table0\bench.toml
+2026-08-23 19:20:42.301 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:105 - Creating 1 instrument drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_without_board_table0\bench.toml
+2026-08-23 19:20:42.302 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument primary_dmm from asset DMM-001
+2026-08-23 19:20:42.302 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:42.303 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:48 - Selecting driver for asset DMM-001 with type multimeter
+2026-08-23 19:20:42.303 | DEBUG    | elims_instruments.intruments.multimeter.factory | elims_instruments.intruments.multimeter.factory:create:67 - Creating Keysight34401A driver for multimeter asset DMM-001
+2026-08-23 19:20:42.303 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:42.303 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:61 - Created Keysight34401A driver for asset DMM-001
+2026-08-23 19:20:42.303 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:122 - Created 1 instrument drivers
+2026-08-23 19:20:42.303 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:86 - Creating 0 board drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_without_board_table0\bench.toml
+2026-08-23 19:20:42.304 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:103 - Created 0 board drivers
+2026-08-23 19:20:42.304 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:87 - Creating 0 DUTs using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_without_board_table0\bench.toml
+2026-08-23 19:20:42.304 | INFO     | elims_instruments.duts.factory | elims_instruments.duts.factory:create_duts:93 - Created 0 DUTs
+2026-08-23 19:20:42.304 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:165 - Loaded bench with 1 instruments, 0 boards, and 0 DUTs
+2026-08-23 19:20:42.425 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:142 - Loading bench from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_missing_ass0\bench.toml
+2026-08-23 19:20:42.426 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_configuration:71 - Reading bench configuration from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_missing_ass0\bench.toml
+2026-08-23 19:20:42.426 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench instruments from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_missing_ass0\bench.toml
+2026-08-23 19:20:42.426 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench instruments assignment missing -> DMM-999
+2026-08-23 19:20:42.426 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:122 - Validated 1 bench instruments
+2026-08-23 19:20:42.426 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench boards from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_missing_ass0\bench.toml
+2026-08-23 19:20:42.426 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench duts from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_missing_ass0\bench.toml
+2026-08-23 19:20:42.426 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:105 - Creating 1 instrument drivers using bench configuration C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_missing_ass0\bench.toml
+2026-08-23 19:20:42.427 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument missing from asset DMM-999
+2026-08-23 19:20:42.427 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:20:42.536 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:142 - Loading bench from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_duplicate_a0\bench.toml
+2026-08-23 19:20:42.536 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_configuration:71 - Reading bench configuration from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_duplicate_a0\bench.toml
+2026-08-23 19:20:42.536 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench instruments from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_duplicate_a0\bench.toml
+2026-08-23 19:20:42.536 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:116 - Validated bench instruments assignment first -> DMM-001
+2026-08-23 19:20:42.647 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:142 - Loading bench from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_unauthorize0\bench.toml
+2026-08-23 19:20:42.647 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_configuration:71 - Reading bench configuration from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_unauthorize0\bench.toml
+2026-08-23 19:20:42.647 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_validate_assignments:86 - Validating bench instruments from C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_bench_rejects_unauthorize0\bench.toml
+2026-08-23 19:20:42.648 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:48 - Selecting driver for asset SCOPE-001 with type oscilloscope

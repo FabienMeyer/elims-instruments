@@ -1,0 +1,14 @@
+2026-08-23 19:09:28.912 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:09:29.006 | DEBUG    | cli              | elims_instruments.database.crud:add:119 - add
+2026-08-23 19:09:29.020 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:09:29.021 | DEBUG    | cli              | elims_instruments.database.crud:fetch:112 - fetch
+2026-08-23 19:09:29.025 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:09:29.026 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:106 - fetchall
+2026-08-23 19:09:29.031 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:09:29.044 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_cli_crud_lifecycle0\bench.toml
+2026-08-23 19:09:29.045 | DEBUG    | cli              | elims_instruments.database.crud:remove:136 - remove
+2026-08-23 19:09:29.059 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_export_and_sync_yaml0\bench.toml
+2026-08-23 19:09:29.142 | DEBUG    | cli              | elims_instruments.database.crud:add:119 - add
+2026-08-23 19:09:29.154 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_export_and_sync_yaml0\bench.toml
+2026-08-23 19:09:29.155 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:106 - fetchall
+2026-08-23 19:09:29.163 | DEBUG    | cli              | elims_instruments.cli.duts:_repository:44 - Opening DUT repository with C:\Users\fabie\Documents\projets\elims-instruments\.pytest-tmp\test_export_and_sync_yaml0\bench.toml

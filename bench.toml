@@ -1,0 +1,8 @@
+[database]
+url = "sqlite:///C:/Users/fabie/Documents/projets/elims-instruments/instruments.db"
+echo = false
+
+[instruments]
+primary_dmm = "DMM-001"
+secondary_dmm = "DMM-002"
+frequency_counter = "CNT-001"

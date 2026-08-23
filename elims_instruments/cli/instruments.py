@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
-import logging
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 import yaml
@@ -15,12 +15,18 @@ from sqlalchemy.exc import IntegrityError
 from elims_instruments.database import (
     Connection,
     ConnectionKind,
+    DuplicateAssetTagError,
     InstrumentCrud,
     InstrumentModel,
+    InstrumentType,
     SocketConnection,
     VisaConnection,
-    validate_instrument_list,
+    parse_instrument_list,
 )
+from elims_instruments.utils.logger import get_cli_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 app = typer.Typer(
     help="Manage the ELIMS instrument database.",
@@ -32,7 +38,7 @@ ConfigurationOption = Annotated[
     typer.Option(
         "--config",
         "-c",
-        help="Database TOML configuration file.",
+        help="Bench TOML configuration file.",
         exists=True,
         file_okay=True,
         dir_okay=False,
@@ -41,9 +47,16 @@ ConfigurationOption = Annotated[
 ]
 
 
-def _repository(configuration: Path) -> InstrumentCrud:
-    """Create a repository for a CLI command."""
-    return InstrumentCrud(logging.getLogger("elims_instruments.cli"), configuration)
+@contextmanager
+def _repository(configuration: Path) -> Iterator[InstrumentCrud]:
+    """Yield a repository and always release its database engine."""
+    logger = get_cli_logger()
+    logger.debug("Opening instrument repository with {}", configuration)
+    repository = InstrumentCrud(logger, configuration)
+    try:
+        yield repository
+    finally:
+        repository.engine.dispose()
 
 
 def _write_instrument(instrument: InstrumentModel) -> None:
@@ -90,14 +103,21 @@ def _connection(
 @app.command()
 def add(
     instrument_id: Annotated[str, typer.Argument(help="Unique instrument ID.")],
-    instrument_type: Annotated[str, typer.Option("--type", help="Instrument type.")],
+    asset_tag: Annotated[
+        str,
+        typer.Option(help="Unique laboratory asset tag."),
+    ],
+    instrument_type: Annotated[
+        InstrumentType,
+        typer.Option("--type", help="Instrument type."),
+    ],
     maker: Annotated[str, typer.Option(help="Instrument manufacturer.")],
     model: Annotated[str, typer.Option(help="Instrument model name.")],
     connection: Annotated[
         ConnectionKind,
         typer.Option("--connection", help="Connection type."),
     ],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
     serial_number: Annotated[str | None, typer.Option()] = None,
     ip_address: Annotated[str | None, typer.Option()] = None,
     port: Annotated[int | None, typer.Option(min=1, max=65535)] = None,
@@ -118,6 +138,7 @@ def add(
         instrument = InstrumentModel.model_validate(
             {
                 "id": instrument_id,
+                "asset_tag": asset_tag,
                 "type": instrument_type,
                 "maker": maker,
                 "model": model,
@@ -125,11 +146,15 @@ def add(
                 "connection": link,
             }
         )
-        stored = _repository(configuration).add(instrument)
+        with _repository(configuration) as repository:
+            stored = repository.add(instrument)
     except ValidationError as error:
         raise typer.BadParameter(str(error)) from error
+    except DuplicateAssetTagError as error:
+        typer.echo(str(error), err=True)
+        raise typer.Exit(code=1) from error
     except IntegrityError as error:
-        typer.echo(f"Instrument already exists: {instrument_id}", err=True)
+        typer.echo(f"Instrument ID already exists: {instrument_id}", err=True)
         raise typer.Exit(code=1) from error
     _write_instrument(stored)
 
@@ -137,10 +162,11 @@ def add(
 @app.command("get")
 def get_by_id(
     instrument_id: Annotated[str, typer.Argument(help="Instrument ID.")],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
     """Get one instrument by ID."""
-    instrument = _repository(configuration).fetch("id", instrument_id)
+    with _repository(configuration) as repository:
+        instrument = repository.fetch("id", instrument_id)
     if instrument is None:
         typer.echo(f"Instrument not found: {instrument_id}", err=True)
         raise typer.Exit(code=1)
@@ -149,10 +175,11 @@ def get_by_id(
 
 @app.command("gets")
 def fetch_all(
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
     """Fetch all instruments."""
-    instruments = _repository(configuration).fetchall()
+    with _repository(configuration) as repository:
+        instruments = repository.fetchall()
     typer.echo(
         json.dumps(
             [instrument.model_dump(mode="json") for instrument in instruments],
@@ -162,10 +189,14 @@ def fetch_all(
 
 
 @app.command("update")
-def update_by_id(
-    instrument_id: Annotated[str, typer.Argument(help="Instrument ID.")],
-    configuration: ConfigurationOption = Path("database.toml"),
-    instrument_type: Annotated[str | None, typer.Option("--type")] = None,
+def update_by_asset_tag(
+    asset_tag: Annotated[str, typer.Argument(help="Current instrument asset tag.")],
+    configuration: ConfigurationOption = Path("bench.toml"),
+    new_asset_tag: Annotated[str | None, typer.Option("--asset-tag")] = None,
+    instrument_type: Annotated[
+        InstrumentType | None,
+        typer.Option("--type"),
+    ] = None,
     maker: Annotated[str | None, typer.Option()] = None,
     model: Annotated[str | None, typer.Option()] = None,
     serial_number: Annotated[str | None, typer.Option()] = None,
@@ -177,10 +208,11 @@ def update_by_id(
     resource_name: Annotated[str | None, typer.Option()] = None,
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
-    """Update selected fields on an instrument identified by ID."""
+    """Update an instrument selected by its current asset tag."""
     changes: dict[str, object] = {
         field: value
         for field, value in {
+            "asset_tag": new_asset_tag,
             "type": instrument_type,
             "maker": maker,
             "model": model,
@@ -203,14 +235,18 @@ def update_by_id(
         raise typer.BadParameter("provide at least one field to update")
 
     try:
-        instrument = _repository(configuration).update_by_id(
-            instrument_id,
-            changes,
-        )
+        with _repository(configuration) as repository:
+            instrument = repository.update_by_asset_tag(asset_tag, changes)
     except ValidationError as error:
         raise typer.BadParameter(str(error)) from error
+    except DuplicateAssetTagError as error:
+        typer.echo(str(error), err=True)
+        raise typer.Exit(code=1) from error
+    except IntegrityError as error:
+        typer.echo("Instrument asset tag already exists", err=True)
+        raise typer.Exit(code=1) from error
     if instrument is None:
-        typer.echo(f"Instrument not found: {instrument_id}", err=True)
+        typer.echo(f"Instrument asset tag not found: {asset_tag}", err=True)
         raise typer.Exit(code=1)
     _write_instrument(instrument)
 
@@ -218,10 +254,12 @@ def update_by_id(
 @app.command("delete")
 def delete_by_id(
     instrument_id: Annotated[str, typer.Argument(help="Instrument ID.")],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
     """Delete one instrument by ID."""
-    if not _repository(configuration).remove("id", instrument_id):
+    with _repository(configuration) as repository:
+        removed = repository.remove("id", instrument_id)
+    if not removed:
         typer.echo(f"Instrument not found: {instrument_id}", err=True)
         raise typer.Exit(code=1)
     typer.echo(f"Deleted instrument: {instrument_id}")
@@ -239,13 +277,14 @@ def sync_yaml(
             readable=True,
         ),
     ],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
     """Add or fully update every instrument in a YAML list by ID."""
     try:
         raw_data: object = yaml.safe_load(source.read_text(encoding="utf-8"))
-        instruments = validate_instrument_list(raw_data)
-        created, updated = _repository(configuration).upsert_many(instruments)
+        instruments = parse_instrument_list(raw_data)
+        with _repository(configuration) as repository:
+            created, updated = repository.upsert_many(instruments)
     except (OSError, yaml.YAMLError, ValidationError, ValueError) as error:
         typer.echo(f"Invalid instrument YAML: {error}", err=True)
         raise typer.Exit(code=1) from error
@@ -255,7 +294,7 @@ def sync_yaml(
 @app.command("export")
 def export_yaml(
     output: Annotated[Path, typer.Argument(help="Destination YAML file.")],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
     force: Annotated[
         bool,
         typer.Option("--force", help="Overwrite an existing YAML file."),
@@ -266,7 +305,8 @@ def export_yaml(
         typer.echo(f"File already exists: {output}; use --force to overwrite", err=True)
         raise typer.Exit(code=1)
 
-    instruments = _repository(configuration).fetchall()
+    with _repository(configuration) as repository:
+        instruments = repository.fetchall()
     content = yaml.safe_dump(
         [instrument.model_dump(mode="json") for instrument in instruments],
         allow_unicode=True,

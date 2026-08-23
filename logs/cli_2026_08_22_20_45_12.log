@@ -1,0 +1,115 @@
+2026-08-22 20:45:12.977 | DEBUG    | cli              | elims_instruments.cli.boards:_repository:49 - Opening board repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle0\database.toml
+2026-08-22 20:45:13.031 | DEBUG    | cli              | elims_instruments.database.crud:add:113 - add
+2026-08-22 20:45:13.046 | DEBUG    | cli              | elims_instruments.cli.boards:_repository:49 - Opening board repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle0\database.toml
+2026-08-22 20:45:13.048 | DEBUG    | cli              | elims_instruments.database.crud:fetch:106 - fetch
+2026-08-22 20:45:13.054 | DEBUG    | cli              | elims_instruments.cli.boards:_repository:49 - Opening board repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle0\database.toml
+2026-08-22 20:45:13.055 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:100 - fetchall
+2026-08-22 20:45:13.061 | DEBUG    | cli              | elims_instruments.cli.boards:_repository:49 - Opening board repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle0\database.toml
+2026-08-22 20:45:13.075 | DEBUG    | cli              | elims_instruments.cli.boards:_repository:49 - Opening board repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle0\database.toml
+2026-08-22 20:45:13.076 | DEBUG    | cli              | elims_instruments.database.crud:remove:130 - remove
+2026-08-22 20:45:13.147 | DEBUG    | cli              | elims_instruments.cli.boards:_repository:49 - Opening board repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_export_and_sync_yaml0\database.toml
+2026-08-22 20:45:13.192 | DEBUG    | cli              | elims_instruments.database.crud:add:113 - add
+2026-08-22 20:45:13.205 | DEBUG    | cli              | elims_instruments.cli.boards:_repository:49 - Opening board repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_export_and_sync_yaml0\database.toml
+2026-08-22 20:45:13.206 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:100 - fetchall
+2026-08-22 20:45:13.215 | DEBUG    | cli              | elims_instruments.cli.boards:_repository:49 - Opening board repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_export_and_sync_yaml0\database.toml
+2026-08-22 20:45:13.239 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle1\database.toml
+2026-08-22 20:45:13.283 | DEBUG    | cli              | elims_instruments.database.crud:add:113 - add
+2026-08-22 20:45:13.296 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle1\database.toml
+2026-08-22 20:45:13.297 | DEBUG    | cli              | elims_instruments.database.crud:fetch:106 - fetch
+2026-08-22 20:45:13.303 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle1\database.toml
+2026-08-22 20:45:13.303 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:100 - fetchall
+2026-08-22 20:45:13.308 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle1\database.toml
+2026-08-22 20:45:13.320 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle1\database.toml
+2026-08-22 20:45:13.321 | DEBUG    | cli              | elims_instruments.database.crud:remove:130 - remove
+2026-08-22 20:45:13.332 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_cli_crud_lifecycle1\database.toml
+2026-08-22 20:45:13.333 | DEBUG    | cli              | elims_instruments.database.crud:fetch:106 - fetch
+2026-08-22 20:45:13.356 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_add_rejects_duplicate_ass0\database.toml
+2026-08-22 20:45:13.406 | DEBUG    | cli              | elims_instruments.database.crud:add:113 - add
+2026-08-22 20:45:13.417 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_add_rejects_duplicate_ass0\database.toml
+2026-08-22 20:45:13.418 | DEBUG    | cli              | elims_instruments.database.crud:add:113 - add
+2026-08-22 20:45:13.426 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_export_and_sync_yaml1\database.toml
+2026-08-22 20:45:13.469 | DEBUG    | cli              | elims_instruments.database.crud:add:113 - add
+2026-08-22 20:45:13.481 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_export_and_sync_yaml1\database.toml
+2026-08-22 20:45:13.482 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:100 - fetchall
+2026-08-22 20:45:13.489 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_export_and_sync_yaml1\database.toml
+2026-08-22 20:45:13.502 | DEBUG    | cli              | elims_instruments.cli.instruments:_repository:49 - Opening instrument repository with C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_export_and_sync_yaml1\database.toml
+2026-08-22 20:45:13.503 | DEBUG    | cli              | elims_instruments.database.crud:fetchall:100 - fetchall
+2026-08-22 20:45:14.090 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:95 - Loading bench from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_drive0\bench.toml
+2026-08-22 20:45:14.090 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench instruments from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_drive0\bench.toml
+2026-08-22 20:45:14.090 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:78 - Validated bench instruments assignment primary_dmm -> DMM-001
+2026-08-22 20:45:14.090 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:78 - Validated bench instruments assignment counter -> CNT-001
+2026-08-22 20:45:14.090 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:79 - Validated 2 bench instruments
+2026-08-22 20:45:14.091 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench boards from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_drive0\bench.toml
+2026-08-22 20:45:14.091 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:106 - Creating 2 instrument drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_drive0\database.toml
+2026-08-22 20:45:14.092 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument primary_dmm from asset DMM-001
+2026-08-22 20:45:14.092 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:49 - Selecting driver for asset DMM-001 with type multimeter
+2026-08-22 20:45:14.092 | DEBUG    | elims_instruments.intruments.multimeter.factory | elims_instruments.intruments.multimeter.factory:create:67 - Creating Keysight34401A driver for multimeter asset DMM-001
+2026-08-22 20:45:14.092 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight34401A driver for asset DMM-001
+2026-08-22 20:45:14.092 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:62 - Created Keysight34401A driver for asset DMM-001
+2026-08-22 20:45:14.092 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument counter from asset CNT-001
+2026-08-22 20:45:14.093 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:49 - Selecting driver for asset CNT-001 with type counter
+2026-08-22 20:45:14.093 | DEBUG    | elims_instruments.intruments.counter.factory | elims_instruments.intruments.counter.factory:create:67 - Creating Keysight53220A driver for counter asset CNT-001
+2026-08-22 20:45:14.093 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight53220A driver for asset CNT-001
+2026-08-22 20:45:14.093 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:62 - Created Keysight53220A driver for asset CNT-001
+2026-08-22 20:45:14.093 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:120 - Created 2 instrument drivers
+2026-08-22 20:45:14.093 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:87 - Creating 0 board drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_drive0\database.toml
+2026-08-22 20:45:14.093 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:101 - Created 0 board drivers
+2026-08-22 20:45:14.094 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:107 - Loaded bench with 2 instruments and 0 boards
+2026-08-22 20:45:14.154 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:95 - Loading bench from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_board0\bench.toml
+2026-08-22 20:45:14.154 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench instruments from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_board0\bench.toml
+2026-08-22 20:45:14.154 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:78 - Validated bench instruments assignment primary_dmm -> DMM-001
+2026-08-22 20:45:14.154 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:79 - Validated 1 bench instruments
+2026-08-22 20:45:14.154 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench boards from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_board0\bench.toml
+2026-08-22 20:45:14.154 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:78 - Validated bench boards assignment characterization_board -> BRD-001
+2026-08-22 20:45:14.154 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:79 - Validated 1 bench boards
+2026-08-22 20:45:14.154 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:106 - Creating 1 instrument drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_board0\database.toml
+2026-08-22 20:45:14.155 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument primary_dmm from asset DMM-001
+2026-08-22 20:45:14.156 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:49 - Selecting driver for asset DMM-001 with type multimeter
+2026-08-22 20:45:14.156 | DEBUG    | elims_instruments.intruments.multimeter.factory | elims_instruments.intruments.multimeter.factory:create:67 - Creating Keysight34401A driver for multimeter asset DMM-001
+2026-08-22 20:45:14.156 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight34401A driver for asset DMM-001
+2026-08-22 20:45:14.156 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:62 - Created Keysight34401A driver for asset DMM-001
+2026-08-22 20:45:14.156 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:120 - Created 1 instrument drivers
+2026-08-22 20:45:14.156 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:87 - Creating 1 board drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_creates_named_board0\database.toml
+2026-08-22 20:45:14.157 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:95 - Resolving board characterization_board from asset BRD-001
+2026-08-22 20:45:14.157 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create:44 - Creating Board driver for board asset BRD-001
+2026-08-22 20:45:14.158 | DEBUG    | elims_instruments.boards.abstract | elims_instruments.boards.abstract:__init__:20 - Initialized Board driver for board asset BRD-001
+2026-08-22 20:45:14.158 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:101 - Created 1 board drivers
+2026-08-22 20:45:14.158 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:107 - Loaded bench with 1 instruments and 1 boards
+2026-08-22 20:45:14.218 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:95 - Loading bench from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_without_board_table0\bench.toml
+2026-08-22 20:45:14.219 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench instruments from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_without_board_table0\bench.toml
+2026-08-22 20:45:14.219 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:78 - Validated bench instruments assignment primary_dmm -> DMM-001
+2026-08-22 20:45:14.219 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:79 - Validated 1 bench instruments
+2026-08-22 20:45:14.219 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench boards from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_without_board_table0\bench.toml
+2026-08-22 20:45:14.219 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:106 - Creating 1 instrument drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_without_board_table0\database.toml
+2026-08-22 20:45:14.220 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument primary_dmm from asset DMM-001
+2026-08-22 20:45:14.220 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:49 - Selecting driver for asset DMM-001 with type multimeter
+2026-08-22 20:45:14.220 | DEBUG    | elims_instruments.intruments.multimeter.factory | elims_instruments.intruments.multimeter.factory:create:67 - Creating Keysight34401A driver for multimeter asset DMM-001
+2026-08-22 20:45:14.220 | DEBUG    | elims_instruments.intruments.abstract | elims_instruments.intruments.abstract:__init__:21 - Initialized Keysight34401A driver for asset DMM-001
+2026-08-22 20:45:14.221 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:62 - Created Keysight34401A driver for asset DMM-001
+2026-08-22 20:45:14.221 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:120 - Created 1 instrument drivers
+2026-08-22 20:45:14.221 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:87 - Creating 0 board drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_without_board_table0\database.toml
+2026-08-22 20:45:14.221 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:101 - Created 0 board drivers
+2026-08-22 20:45:14.221 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:107 - Loaded bench with 1 instruments and 0 boards
+2026-08-22 20:45:14.281 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:95 - Loading bench from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_rejects_missing_ass0\bench.toml
+2026-08-22 20:45:14.282 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench instruments from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_rejects_missing_ass0\bench.toml
+2026-08-22 20:45:14.282 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:78 - Validated bench instruments assignment missing -> DMM-999
+2026-08-22 20:45:14.282 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:79 - Validated 1 bench instruments
+2026-08-22 20:45:14.282 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench boards from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_rejects_missing_ass0\bench.toml
+2026-08-22 20:45:14.282 | INFO     | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:106 - Creating 1 instrument drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_rejects_missing_ass0\database.toml
+2026-08-22 20:45:14.283 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create_instruments:114 - Resolving bench instrument missing from asset DMM-999
+2026-08-22 20:45:14.345 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:95 - Loading bench from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_rejects_duplicate_a0\bench.toml
+2026-08-22 20:45:14.345 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench instruments from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_rejects_duplicate_a0\bench.toml
+2026-08-22 20:45:14.345 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:78 - Validated bench instruments assignment first -> DMM-001
+2026-08-22 20:45:14.405 | INFO     | elims_instruments.bench.bench | elims_instruments.bench.bench:__init__:95 - Loading bench from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_rejects_unauthorize0\bench.toml
+2026-08-22 20:45:14.405 | DEBUG    | elims_instruments.bench.bench | elims_instruments.bench.bench:_read_assignments:39 - Reading bench instruments from C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_bench_rejects_unauthorize0\bench.toml
+2026-08-22 20:45:14.406 | DEBUG    | elims_instruments.intruments.factory | elims_instruments.intruments.factory:create:49 - Selecting driver for asset SCOPE-001 with type oscilloscope
+2026-08-22 20:45:14.458 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:87 - Creating 1 board drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_create_boards_uses_base_d0\database.toml
+2026-08-22 20:45:14.459 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:95 - Resolving board characterization_board from asset BRD-001
+2026-08-22 20:45:14.460 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create:44 - Creating Board driver for board asset BRD-001
+2026-08-22 20:45:14.460 | DEBUG    | elims_instruments.boards.abstract | elims_instruments.boards.abstract:__init__:20 - Initialized Board driver for board asset BRD-001
+2026-08-22 20:45:14.460 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:101 - Created 1 board drivers
+2026-08-22 20:45:14.461 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:register:34 - Registered board builder FixtureBoard for type registered-fixture
+2026-08-22 20:45:14.461 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create:44 - Creating FixtureBoard driver for board asset BRD-002
+2026-08-22 20:45:14.461 | DEBUG    | elims_instruments.boards.abstract | elims_instruments.boards.abstract:__init__:20 - Initialized FixtureBoard driver for board asset BRD-002
+2026-08-22 20:45:14.513 | INFO     | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:87 - Creating 1 board drivers using database configuration C:\Users\fabie\AppData\Local\Temp\elims-instruments-pytest-cli-logger\test_create_boards_rejects_mis0\database.toml
+2026-08-22 20:45:14.514 | DEBUG    | elims_instruments.boards.factory | elims_instruments.boards.factory:create_boards:95 - Resolving board missing from asset BRD-999

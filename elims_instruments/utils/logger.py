@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import dataclasses
 from contextlib import suppress
-from enum import Enum
+from enum import StrEnum
+from functools import lru_cache
 from pathlib import Path
 from sys import stderr
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, cast
 
 from loguru import logger
 
@@ -15,9 +16,27 @@ from elims_instruments.utils.files import FileHelper
 from elims_instruments.utils.timestamp import Timestamp
 
 if TYPE_CHECKING:
-    from typing import Any
+    from loguru import Record
 
-    from loguru._logger import Logger
+
+class Logger(Protocol):
+    """Typed logging operations exposed to application modules."""
+
+    def debug(self, message: str, *args: object, **kwargs: object) -> None:
+        """Log a diagnostic message."""
+        ...
+
+    def info(self, message: str, *args: object, **kwargs: object) -> None:
+        """Log an informational message."""
+        ...
+
+    def warning(self, message: str, *args: object, **kwargs: object) -> None:
+        """Log a warning message."""
+        ...
+
+    def error(self, message: str, *args: object, **kwargs: object) -> None:
+        """Log an error message."""
+        ...
 
 
 @dataclasses.dataclass
@@ -29,8 +48,9 @@ class LoggerHelper:
     file_directory: Path
     file_level: LoggerHelper.Level
     terminal_level: LoggerHelper.Level
+    rotation: str | int | None = None
 
-    class Color(str, Enum):
+    class Color(StrEnum):
         """Colors for log messages."""
 
         BLACK = "black"
@@ -50,7 +70,7 @@ class LoggerHelper:
         WHITE = "white"
         YELLOW = "yellow"
 
-    class Level(str, Enum):
+    class Level(StrEnum):
         """Log levels supported."""
 
         TRACE = "TRACE"
@@ -73,9 +93,12 @@ class LoggerHelper:
         )
         self.configure_terminal_logger()
         self.configure_file_logger()
-        self._logger: Logger = logger.bind(
-            source=self.name,
-            source_color=self.color.value,
+        self._logger = cast(
+            "Logger",
+            logger.bind(
+                source=self.name,
+                source_color=self.color.value,
+            ),
         )
 
     def logger(self) -> Logger:
@@ -86,7 +109,7 @@ class LoggerHelper:
         """
         return self._logger
 
-    def terminal_format(self, record: dict[str, Any]) -> str:
+    def terminal_format(self, record: Record) -> str:
         """Select the terminal color from the logger's bound context.
 
         Args:
@@ -137,6 +160,7 @@ class LoggerHelper:
                 level=self.file_level.value,
                 format=self.file_format(),
                 encoding="utf-8",
+                rotation=self.rotation,
             )
 
     def bind(self, source: str, source_color: Color) -> Logger:
@@ -148,7 +172,10 @@ class LoggerHelper:
         Returns:
             A logger bound to the given source and color.
         """
-        return logger.bind(source=source, source_color=source_color.value)
+        return cast(
+            "Logger",
+            logger.bind(source=source, source_color=source_color.value),
+        )
 
 
 LOGGER_HELPER = LoggerHelper(
@@ -158,3 +185,33 @@ LOGGER_HELPER = LoggerHelper(
     file_level=LoggerHelper.Level.DEBUG,
     terminal_level=LoggerHelper.Level.DEBUG,
 )
+
+CLI_LOGGER_HELPER = LoggerHelper(
+    name="cli",
+    color=LoggerHelper.Color.MAGENTA,
+    file_directory=Path("logs"),
+    file_level=LoggerHelper.Level.DEBUG,
+    terminal_level=LoggerHelper.Level.WARNING,
+    rotation="10 MB",
+)
+
+
+@lru_cache
+def get_logger(
+    source: str,
+    source_color: LoggerHelper.Color = LoggerHelper.Color.CYAN,
+) -> Logger:
+    """Return a cached logger bound through the shared logger helper.
+
+    Sink configuration remains the application's responsibility through
+    ``LOGGER_HELPER.configure()``. Bound loggers automatically use those sinks
+    once configured.
+    """
+    return LOGGER_HELPER.bind(source, source_color)
+
+
+@lru_cache
+def get_cli_logger() -> Logger:
+    """Configure and return the shared rotating CLI logger."""
+    CLI_LOGGER_HELPER.configure()
+    return CLI_LOGGER_HELPER.logger()

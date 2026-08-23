@@ -1,40 +1,47 @@
 """Database models and repositories."""
 
-from .crud import Crud, DatabaseConfigurationError
+from .board import (
+    BoardCrud,
+    BoardModel,
+    parse_board_list,
+)
 from .connections import (
+    ComConnection,
     Connection,
     ConnectionKind,
-    SocketConnection,
-    VisaConnection,
-    ComConnection,
-    USBConnection,
     ConnectionType,
+    SocketConnection,
+    USBConnection,
+    VisaConnection,
 )
+from .crud import Crud, DatabaseConfigurationError, DuplicateAssetTagError
+from .dut import DutCrud, DutModel, parse_dut_list
 from .instrument import (
     InstrumentCrud,
     InstrumentModel,
-    validate_instrument_list,
-)
-from .board import (
-    BoardModel,
-    BoardCrud,
-    validate_board_list,
+    InstrumentType,
+    parse_instrument_list,
 )
 
 __all__ = [
+    "BoardCrud",
+    "BoardModel",
+    "ComConnection",
     "Connection",
     "ConnectionKind",
+    "ConnectionType",
     "Crud",
     "DatabaseConfigurationError",
+    "DuplicateAssetTagError",
+    "DutCrud",
+    "DutModel",
     "InstrumentCrud",
     "InstrumentModel",
+    "InstrumentType",
     "SocketConnection",
-    "VisaConnection",
-    "validate_instrument_list",
-    "BoardModel",
-    "BoardCrud",
-    "ComConnection",
     "USBConnection",
-    "validate_board_list",
-    "ConnectionType",
+    "VisaConnection",
+    "parse_board_list",
+    "parse_dut_list",
+    "parse_instrument_list",
 ]

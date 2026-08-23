@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
-import logging
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 import yaml
@@ -16,11 +16,17 @@ from elims_instruments.database import (
     BoardCrud,
     BoardModel,
     ComConnection,
-    USBConnection,
+    Connection,
     ConnectionKind,
+    DuplicateAssetTagError,
     SocketConnection,
-    validate_board_list,
+    USBConnection,
+    parse_board_list,
 )
+from elims_instruments.utils.logger import get_cli_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 app = typer.Typer(
     help="Manage the ELIMS board database.",
@@ -33,7 +39,7 @@ ConfigurationOption = Annotated[
     typer.Option(
         "--config",
         "-c",
-        help="Database TOML configuration file.",
+        help="Bench TOML configuration file.",
         exists=True,
         file_okay=True,
         dir_okay=False,
@@ -42,8 +48,16 @@ ConfigurationOption = Annotated[
 ]
 
 
-def _repository(configuration: Path) -> BoardCrud:
-    return BoardCrud(logging.getLogger("elims_instruments.cli"), configuration)
+@contextmanager
+def _repository(configuration: Path) -> Iterator[BoardCrud]:
+    """Yield a repository and always release its database engine."""
+    logger = get_cli_logger()
+    logger.debug("Opening board repository with {}", configuration)
+    repository = BoardCrud(logger, configuration)
+    try:
+        yield repository
+    finally:
+        repository.engine.dispose()
 
 
 def _write_board(board: BoardModel) -> None:
@@ -68,7 +82,7 @@ def _connection(
     serial_number: str | None,
     interface: int | None,
     timeout_seconds: float | None,
-) -> object:
+) -> Connection:
     try:
         if kind is ConnectionKind.SOCKET:
             if ip_address is None or port is None:
@@ -120,6 +134,10 @@ def _connection(
 @app.command()
 def add(
     board_id: Annotated[str, typer.Argument(help="Unique board ID.")],
+    asset_tag: Annotated[
+        str,
+        typer.Option(help="Unique laboratory asset tag."),
+    ],
     board_type: Annotated[str, typer.Option("--type", help="Board type.")],
     maker: Annotated[str, typer.Option(help="Board manufacturer.")],
     model: Annotated[str, typer.Option(help="Board model name.")],
@@ -127,7 +145,7 @@ def add(
         ConnectionKind,
         typer.Option("--connection", help="Connection type."),
     ],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
     serial_number: Annotated[str | None, typer.Option()] = None,
     ip_address: Annotated[str | None, typer.Option()] = None,
     port: Annotated[int | None, typer.Option(min=1, max=65535)] = None,
@@ -162,6 +180,7 @@ def add(
         board = BoardModel.model_validate(
             {
                 "id": board_id,
+                "asset_tag": asset_tag,
                 "type": board_type,
                 "maker": maker,
                 "model": model,
@@ -169,11 +188,15 @@ def add(
                 "connection": link,
             }
         )
-        stored = _repository(configuration).add(board)
+        with _repository(configuration) as repository:
+            stored = repository.add(board)
     except ValidationError as error:
         raise typer.BadParameter(str(error)) from error
+    except DuplicateAssetTagError as error:
+        typer.echo(str(error), err=True)
+        raise typer.Exit(code=1) from error
     except IntegrityError as error:
-        typer.echo(f"Board already exists: {board_id}", err=True)
+        typer.echo(f"Board ID already exists: {board_id}", err=True)
         raise typer.Exit(code=1) from error
     _write_board(stored)
 
@@ -181,9 +204,10 @@ def add(
 @app.command("get")
 def get_by_id(
     board_id: Annotated[str, typer.Argument(help="Board ID.")],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
-    board = _repository(configuration).fetch("id", board_id)
+    with _repository(configuration) as repository:
+        board = repository.fetch("id", board_id)
     if board is None:
         typer.echo(f"Board not found: {board_id}", err=True)
         raise typer.Exit(code=1)
@@ -192,18 +216,20 @@ def get_by_id(
 
 @app.command("gets")
 def fetch_all(
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
-    boards = _repository(configuration).fetchall()
+    with _repository(configuration) as repository:
+        boards = repository.fetchall()
     typer.echo(
         json.dumps([board.model_dump(mode="json") for board in boards], indent=2)
     )
 
 
 @app.command("update")
-def update_by_id(
-    board_id: Annotated[str, typer.Argument(help="Board ID.")],
-    configuration: ConfigurationOption = Path("database.toml"),
+def update_by_asset_tag(
+    asset_tag: Annotated[str, typer.Argument(help="Current board asset tag.")],
+    configuration: ConfigurationOption = Path("bench.toml"),
+    new_asset_tag: Annotated[str | None, typer.Option("--asset-tag")] = None,
     board_type: Annotated[str | None, typer.Option("--type")] = None,
     maker: Annotated[str | None, typer.Option()] = None,
     model: Annotated[str | None, typer.Option()] = None,
@@ -223,9 +249,11 @@ def update_by_id(
     interface: Annotated[int | None, typer.Option()] = None,
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
+    """Update a board selected by its current asset tag."""
     changes: dict[str, object] = {
         field: value
         for field, value in {
+            "asset_tag": new_asset_tag,
             "type": board_type,
             "maker": maker,
             "model": model,
@@ -256,11 +284,18 @@ def update_by_id(
         raise typer.BadParameter("provide at least one field to update")
 
     try:
-        board = _repository(configuration).update_by_id(board_id, changes)
+        with _repository(configuration) as repository:
+            board = repository.update_by_asset_tag(asset_tag, changes)
     except ValidationError as error:
         raise typer.BadParameter(str(error)) from error
+    except DuplicateAssetTagError as error:
+        typer.echo(str(error), err=True)
+        raise typer.Exit(code=1) from error
+    except IntegrityError as error:
+        typer.echo("Board asset tag already exists", err=True)
+        raise typer.Exit(code=1) from error
     if board is None:
-        typer.echo(f"Board not found: {board_id}", err=True)
+        typer.echo(f"Board asset tag not found: {asset_tag}", err=True)
         raise typer.Exit(code=1)
     _write_board(board)
 
@@ -268,9 +303,11 @@ def update_by_id(
 @app.command("delete")
 def delete_by_id(
     board_id: Annotated[str, typer.Argument(help="Board ID.")],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
-    if not _repository(configuration).remove("id", board_id):
+    with _repository(configuration) as repository:
+        removed = repository.remove("id", board_id)
+    if not removed:
         typer.echo(f"Board not found: {board_id}", err=True)
         raise typer.Exit(code=1)
     typer.echo(f"Deleted board: {board_id}")
@@ -288,12 +325,13 @@ def sync_yaml(
             readable=True,
         ),
     ],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
     try:
         raw_data: object = yaml.safe_load(source.read_text(encoding="utf-8"))
-        boards = validate_board_list(raw_data)
-        created, updated = _repository(configuration).upsert_many(boards)
+        boards = parse_board_list(raw_data)
+        with _repository(configuration) as repository:
+            created, updated = repository.upsert_many(boards)
     except (OSError, yaml.YAMLError, ValidationError, ValueError) as error:
         typer.echo(f"Invalid board YAML: {error}", err=True)
         raise typer.Exit(code=1) from error
@@ -303,7 +341,7 @@ def sync_yaml(
 @app.command("export")
 def export_yaml(
     output: Annotated[Path, typer.Argument(help="Destination YAML file")],
-    configuration: ConfigurationOption = Path("database.toml"),
+    configuration: ConfigurationOption = Path("bench.toml"),
     force: Annotated[
         bool,
         typer.Option("--force", help="Overwrite an existing YAML file."),
@@ -313,7 +351,8 @@ def export_yaml(
         typer.echo(f"File already exists: {output}; use --force to overwrite", err=True)
         raise typer.Exit(code=1)
 
-    boards = _repository(configuration).fetchall()
+    with _repository(configuration) as repository:
+        boards = repository.fetchall()
     content = yaml.safe_dump(
         [board.model_dump(mode="json") for board in boards],
         allow_unicode=True,
