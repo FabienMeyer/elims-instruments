@@ -8,13 +8,13 @@ from types import MappingProxyType
 from typing import ClassVar
 
 from elims_instruments.database import BoardCrud, BoardModel
-from elims_instruments.utils.logger import get_logger
+from elims_instruments.utils.logger import LoggerHelper, get_logger
 
 from .abstract import Board
 from .error import BoardAssetNotFoundError
 
 BoardBuilder = Callable[[BoardModel], Board]
-logger = get_logger(__name__)
+logger = get_logger(__name__, LoggerHelper.Color.GREEN)
 
 
 class BoardFactory:

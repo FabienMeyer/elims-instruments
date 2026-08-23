@@ -33,6 +33,11 @@ class BenchConfigurationError(ValueError):
         return cls(f"Unauthorized DUT name: {name!r}")
 
     @classmethod
+    def unauthorized_project_name(cls, name: object) -> Self:
+        """Create an error for a project name outside the allowlist."""
+        return cls(f"Unauthorized project name: {name!r}")
+
+    @classmethod
     def invalid_board_name(cls, name: object) -> Self:
         """Create an error for an invalid or reserved Python board name."""
         return cls(f"Invalid or reserved board name: {name!r}")
@@ -41,6 +46,11 @@ class BenchConfigurationError(ValueError):
     def invalid_dut_name(cls, name: object) -> Self:
         """Create an error for an invalid or reserved Python DUT name."""
         return cls(f"Invalid or reserved DUT name: {name!r}")
+
+    @classmethod
+    def invalid_project_name(cls, name: object) -> Self:
+        """Create an error for an invalid or reserved Python project name."""
+        return cls(f"Invalid or reserved project name: {name!r}")
 
     @classmethod
     def unauthorized_name(cls, name: object) -> Self:

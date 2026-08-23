@@ -11,12 +11,13 @@ uv run pytest
 
 ## CLI
 
-The CLI manages instruments, boards, and DUTs in the configured database:
+The CLI manages instruments, boards, DUTs, and projects in the configured database:
 
 ```powershell
 uv run elims instruments gets --config bench.toml
 uv run elims boards gets --config bench.toml
 uv run elims duts gets --config bench.toml
+uv run elims projects gets --config bench.toml
 ```
 
 Each group supports `add`, `get`, `gets`, `update`, `delete`, `sync`, and
@@ -41,6 +42,9 @@ uv run elims boards add board-1 --asset-tag BRD-001 `
 
 uv run elims duts add dut-1 --asset-tag DUT-001 `
   --project demo-project --corner TT --revision A
+
+uv run elims projects add project-1 --name demo-project `
+  --dut DUT-001 --board BRD-001
 ```
 
 ## Bench configuration
@@ -61,6 +65,9 @@ characterization_board = "BRD-001"
 
 [duts]
 characterized_ic = "DUT-001"
+
+[projects]
+characterization = "demo-project"
 ```
 
 Relative SQLite paths are resolved from the directory containing `bench.toml`.
@@ -85,16 +92,25 @@ class DutName(StrEnum):
     CHARACTERIZED_IC = "characterized_ic"
 
 
+class ProjectName(StrEnum):
+    CHARACTERIZATION = "characterization"
+
+
 bench = Bench(
     authorized_instrument_names=InstrumentName,
     authorized_board_names=BoardName,
     authorized_dut_names=DutName,
+    authorized_project_names=ProjectName,
 )
 
 print(bench.instruments.primary_dmm)
 print(bench.boards.characterization_board)
 print(bench.duts.characterized_ic)
+print(bench.projects.characterization)
 ```
+
+Concrete DUT and project builders must be registered for their database project
+names before loading assigned DUTs or projects.
 
 ## Examples
 
@@ -107,6 +123,23 @@ uv run python examples/characterize_ic.py
 ```
 
 See [examples/README.md](examples/README.md) for database seeding.
+
+## Documentation
+
+Preview the documentation with live reload:
+
+```powershell
+uv run mkdocs serve
+```
+
+Validate the complete site, including generated API reference pages:
+
+```powershell
+uv run mkdocs build --strict
+```
+
+The generated `site/` directory is ignored by Git. Documentation sources and
+contributor guidance live under [docs](docs/index.md).
 
 ## Driver status
 

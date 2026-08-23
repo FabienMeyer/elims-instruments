@@ -32,14 +32,23 @@ classDiagram
         +die_x: int | None
         +die_y: int | None
     }
+    class ProjectModel {
+        +id: str
+        +name: str
+        +supported_duts: list[DutModel]
+        +supported_boards: list[BoardModel]
+    }
 
     InstrumentModel --> Connection
     BoardModel --> Connection
+    ProjectModel ..> DutModel : supports
+    ProjectModel ..> BoardModel : supports
 ```
 
-`bench.toml` maps project-owned `InstrumentName`, `BoardName`, and `DutName`
-roles to asset tags. `Bench` validates those names, resolves the assets, and
-exposes read-only collections.
+`bench.toml` maps project-owned instrument, board, DUT, and project role names
+to database identifiers. Asset roles use asset tags; project roles use unique
+project names. `Bench` validates those names, resolves the records, and exposes
+read-only collections.
 
 ```mermaid
 flowchart LR
@@ -49,10 +58,11 @@ flowchart LR
     Bench --> Instruments
     Bench --> Boards
     Bench --> DUTs
+    Bench --> Projects
 ```
 
-The CLI groups use the same validated models and CRUD repositories as the
-Python API.
+The instrument, board, DUT, and project CLI groups use the same validated
+models and CRUD repositories as the Python API.
 
 Schema changes are versioned with Alembic and applied with
 `elims database upgrade`.

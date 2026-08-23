@@ -8,17 +8,17 @@ from types import MappingProxyType
 from typing import ClassVar
 
 from elims_instruments.database import DutCrud, DutModel
-from elims_instruments.utils.logger import get_logger
+from elims_instruments.utils.logger import LoggerHelper, get_logger
 
 from .abstract import Dut
 from .error import DutAssetNotFoundError
 
 DutBuilder = Callable[[DutModel], Dut]
-logger = get_logger(__name__)
+logger = get_logger(__name__, LoggerHelper.Color.YELLOW)
 
 
 class DutFactory:
-    """Create base or specialized DUT objects from database models."""
+    """Create registered DUT objects from database models."""
 
     _registry: ClassVar[dict[str, DutBuilder]] = {}
 
@@ -39,8 +39,15 @@ class DutFactory:
 
     @classmethod
     def create(cls, dut: DutModel) -> Dut:
-        """Create the registered DUT project, falling back to the base object."""
-        builder = cls._registry.get(dut.project.strip().casefold(), Dut)
+        """Create the concrete DUT registered for a DUT project."""
+        project_key = dut.project.strip().casefold()
+        if project_key not in cls._registry:
+            available = ", ".join(cls._registry)
+            raise ValueError(
+                f"Unknown DUT project: '{dut.project}'. "
+                f"Available projects: {available or 'None registered yet'}"
+            )
+        builder = cls._registry[project_key]
         logger.debug(
             "Creating {} for DUT asset {}",
             getattr(builder, "__name__", type(builder).__name__),

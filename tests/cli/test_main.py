@@ -25,6 +25,15 @@ def test_root_cli_registers_duts_module() -> None:
     assert "sync" in result.output
 
 
+def test_root_cli_registers_projects_module() -> None:
+    """The root CLI exposes project database commands."""
+    result = CliRunner().invoke(root_app, ["projects", "--help"])
+
+    assert result.exit_code == 0
+    assert "Manage the ELIMS project database" in result.output
+    assert "sync" in result.output
+
+
 def test_root_cli_registers_database_module() -> None:
     """The root CLI exposes schema migration commands."""
     result = CliRunner().invoke(root_app, ["database", "--help"])

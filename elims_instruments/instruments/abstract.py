@@ -3,9 +3,9 @@
 from abc import ABC, abstractmethod
 
 from elims_instruments.database.instrument import InstrumentModel
-from elims_instruments.utils.logger import get_logger
+from elims_instruments.utils.logger import LoggerHelper, get_logger
 
-logger = get_logger(__name__)
+logger = get_logger(__name__, LoggerHelper.Color.CYAN)
 
 
 class Instrument(ABC):

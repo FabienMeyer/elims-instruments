@@ -12,6 +12,8 @@ from elims_instruments.database import (
     InstrumentCrud,
     InstrumentModel,
     InstrumentType,
+    ProjectCrud,
+    ProjectModel,
     USBConnection,
     VisaConnection,
 )
@@ -45,42 +47,45 @@ def seed_database() -> None:
     finally:
         instruments.engine.dispose()
 
+    board = BoardModel(
+        id="demo-characterization-board",
+        asset_tag="BRD-001",
+        type="characterization",
+        maker="ELIMS",
+        model="Demo Characterization Board",
+        connection=USBConnection(vendor_id=0x1209, product_id=0x0001),
+    )
     boards = BoardCrud(repository_logger, EXAMPLE_CONFIGURATION)
     try:
-        boards.upsert_many(
-            [
-                BoardModel(
-                    id="demo-characterization-board",
-                    asset_tag="BRD-001",
-                    type="characterization",
-                    maker="ELIMS",
-                    model="Demo Characterization Board",
-                    connection=USBConnection(vendor_id=0x1209, product_id=0x0001),
-                )
-            ]
-        )
+        boards.upsert_many([board])
     finally:
         boards.engine.dispose()
 
+    dut = DutModel(
+        id="demo-dut",
+        asset_tag="DUT-001",
+        project="demo-project",
+        corner="TT",
+        revision="A",
+        lot_number="LOT-001",
+        wafer_id="W01",
+        die_x=12,
+        die_y=8,
+    )
     duts = DutCrud(repository_logger, EXAMPLE_CONFIGURATION)
     try:
-        duts.upsert_many(
-            [
-                DutModel(
-                    id="demo-dut",
-                    asset_tag="DUT-001",
-                    project="demo-project",
-                    corner="TT",
-                    revision="A",
-                    lot_number="LOT-001",
-                    wafer_id="W01",
-                    die_x=12,
-                    die_y=8,
-                )
-            ]
-        )
+        duts.upsert_many([dut])
     finally:
         duts.engine.dispose()
+
+    project = ProjectModel(id="demo-project", name="demo-project")
+    project.supported_duts = [dut]
+    project.supported_boards = [board]
+    projects = ProjectCrud(repository_logger, EXAMPLE_CONFIGURATION)
+    try:
+        projects.upsert_many([project])
+    finally:
+        projects.engine.dispose()
 
 
 if __name__ == "__main__":

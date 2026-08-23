@@ -19,6 +19,14 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+class CharacterizationDut(Dut):
+    """Concrete DUT used by factory tests."""
+
+    def get_id(self) -> str:
+        """Return the database DUT ID."""
+        return self.dut.id
+
+
 @pytest.fixture
 def bench_configuration(tmp_path: Path) -> Path:
     """Create a database containing one IC DUT."""
@@ -42,21 +50,19 @@ def bench_configuration(tmp_path: Path) -> Path:
     return configuration
 
 
-def test_create_duts_uses_base_object(bench_configuration: Path) -> None:
-    """An unregistered DUT type uses the base DUT object."""
+def test_create_duts_uses_registered_project(bench_configuration: Path) -> None:
+    """A registered project creates a concrete DUT object."""
+    DutFactory.register("demo-project", CharacterizationDut)
     duts = create_duts({"characterized_ic": "DUT-001"}, bench_configuration)
 
-    assert type(duts.characterized_ic) is Dut
+    assert type(duts.characterized_ic) is CharacterizationDut
+    assert duts.characterized_ic.get_id() == "dut-1"
     assert duts["characterized_ic"].dut.asset_tag == "DUT-001"
     assert list(duts) == ["characterized_ic"]
 
 
-def test_create_duts_uses_registered_project() -> None:
-    """A registered DUT project can replace the base object."""
-
-    class CharacterizationDut(Dut):
-        pass
-
+def test_factory_normalizes_registered_project() -> None:
+    """Project lookup ignores surrounding whitespace and letter case."""
     model = DutModel(
         id="dut-2",
         asset_tag="DUT-002",
@@ -69,10 +75,24 @@ def test_create_duts_uses_registered_project() -> None:
     assert isinstance(DutFactory.create(model), CharacterizationDut)
 
 
+def test_factory_rejects_unregistered_project() -> None:
+    """A DUT whose project has no concrete builder is rejected."""
+    model = DutModel(
+        id="dut-3",
+        asset_tag="DUT-003",
+        project="unregistered-project",
+        corner="TT",
+        revision="A",
+    )
+
+    with pytest.raises(ValueError, match="Unknown DUT project"):
+        DutFactory.create(model)
+
+
 def test_factory_rejects_invalid_registration() -> None:
     """Factory registration fails clearly for invalid inputs."""
     with pytest.raises(ValueError, match="non-empty"):
-        DutFactory.register(" ", Dut)
+        DutFactory.register(" ", CharacterizationDut)
 
     with pytest.raises(TypeError, match="callable"):
         DutFactory.register("demo-project", None)  # type: ignore[arg-type]

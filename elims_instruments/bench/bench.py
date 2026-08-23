@@ -16,6 +16,7 @@ from elims_instruments.instruments.factory import (
     InstrumentCollection,
     create_instruments,
 )
+from elims_instruments.projects import ProjectCollection, create_projects
 from elims_instruments.utils.logger import get_logger
 
 AuthorizedNames = Collection[str] | type[StrEnum]
@@ -54,6 +55,13 @@ _DUT_SPEC = _AssignmentSpec(
     optional=True,
     unauthorized_error=BenchConfigurationError.unauthorized_dut_name,
     invalid_name_error=BenchConfigurationError.invalid_dut_name,
+)
+_PROJECT_SPEC = _AssignmentSpec(
+    section="projects",
+    collection_type=ProjectCollection,
+    optional=True,
+    unauthorized_error=BenchConfigurationError.unauthorized_project_name,
+    invalid_name_error=BenchConfigurationError.invalid_project_name,
 )
 
 
@@ -128,7 +136,7 @@ def _validate_assignments(
 
 
 class Bench:
-    """A configured bench containing instruments, boards, and DUTs."""
+    """A configured bench containing instruments, boards, DUTs, and projects."""
 
     def __init__(
         self,
@@ -137,8 +145,9 @@ class Bench:
         authorized_instrument_names: AuthorizedNames,
         authorized_board_names: AuthorizedNames = (),
         authorized_dut_names: AuthorizedNames = (),
+        authorized_project_names: AuthorizedNames = (),
     ) -> None:
-        """Load configured instruments, boards, and DUTs."""
+        """Load configured instruments, boards, DUTs, and projects."""
         logger.info("Loading bench from {}", configuration)
         raw_configuration = _read_configuration(configuration)
         assignments = _validate_assignments(
@@ -159,12 +168,20 @@ class Bench:
             _authorized_name_values(authorized_dut_names),
             _DUT_SPEC,
         )
+        project_assignments = _validate_assignments(
+            raw_configuration,
+            configuration,
+            _authorized_name_values(authorized_project_names),
+            _PROJECT_SPEC,
+        )
         self.instruments = create_instruments(assignments, configuration)
         self.boards = create_boards(board_assignments, configuration)
         self.duts = create_duts(dut_assignments, configuration)
+        self.projects = create_projects(project_assignments, configuration)
         logger.info(
-            "Loaded bench with {} instruments, {} boards, and {} DUTs",
+            "Loaded bench with {} instruments, {} boards, {} DUTs, and {} projects",
             len(self.instruments),
             len(self.boards),
             len(self.duts),
+            len(self.projects),
         )

@@ -12,13 +12,19 @@ from elims_instruments.instruments.counter import create_counter
 from elims_instruments.instruments.counter.abstract import Counter
 from elims_instruments.instruments.multimeter import create_multimeter
 from elims_instruments.instruments.multimeter.abstract import Multimeter
-from elims_instruments.utils.logger import get_logger
+from elims_instruments.instruments.power_supply import create_power_supply
+from elims_instruments.instruments.power_supply.abstract import PowerSupply
+from elims_instruments.instruments.thermal_test_system import (
+    ThermalTestSystem,
+    create_thermal_test_system,
+)
+from elims_instruments.utils.logger import LoggerHelper, get_logger
 
 from .error import InstrumentAssetNotFoundError, UnsupportedInstrumentTypeError
 
-InstrumentDriver = Multimeter | Counter
+InstrumentDriver = Multimeter | Counter | PowerSupply | ThermalTestSystem
 InstrumentBuilder = Callable[[InstrumentModel], InstrumentDriver]
-logger = get_logger(__name__)
+logger = get_logger(__name__, LoggerHelper.Color.CYAN)
 
 
 class InstrumentFactory:
@@ -60,7 +66,10 @@ class InstrumentFactory:
                 cls._registry,
             ) from error
         driver = builder(instrument)
-        if not isinstance(driver, (Multimeter, Counter)):
+        if not isinstance(
+            driver,
+            (Multimeter, Counter, PowerSupply, ThermalTestSystem),
+        ):
             raise TypeError("Instrument builders must return an instrument driver")
         logger.debug(
             "Created {} driver for asset {}",
@@ -72,6 +81,11 @@ class InstrumentFactory:
 
 InstrumentFactory.register(InstrumentType.MULTIMETER, create_multimeter)
 InstrumentFactory.register(InstrumentType.COUNTER, create_counter)
+InstrumentFactory.register(InstrumentType.POWER_SUPPLY, create_power_supply)
+InstrumentFactory.register(
+    InstrumentType.THERMAL_TEST_SYSTEM,
+    create_thermal_test_system,
+)
 
 
 class InstrumentCollection(Mapping[str, InstrumentDriver]):

@@ -35,6 +35,8 @@ class InstrumentType(StrEnum):
     COUNTER = "counter"
     MULTIMETER = "multimeter"
     OSCILLOSCOPE = "oscilloscope"
+    POWER_SUPPLY = "power_supply"
+    THERMAL_TEST_SYSTEM = "thermal_test_system"
 
 
 _INSTRUMENT_TYPE_DB = Enum(

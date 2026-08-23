@@ -3,11 +3,11 @@
 from typing import ClassVar
 
 from elims_instruments.database.instrument import InstrumentModel
-from elims_instruments.utils.logger import get_logger
+from elims_instruments.utils.logger import LoggerHelper, get_logger
 
 from .abstract import Multimeter
 
-logger = get_logger(__name__)
+logger = get_logger(__name__, LoggerHelper.Color.CYAN)
 
 
 class MultimeterFactory:

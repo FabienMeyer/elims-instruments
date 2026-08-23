@@ -11,3 +11,6 @@ characterization_board = "BRD-001"
 
 [duts]
 characterized_ic = "DUT-001"
+
+[projects]
+characterization = "demo-project"

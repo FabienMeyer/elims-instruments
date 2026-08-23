@@ -1,9 +1,9 @@
 """Base driver for laboratory boards."""
 
 from elims_instruments.database import BoardModel
-from elims_instruments.utils.logger import get_logger
+from elims_instruments.utils.logger import LoggerHelper, get_logger
 
-logger = get_logger(__name__)
+logger = get_logger(__name__, LoggerHelper.Color.GREEN)
 
 
 class Board:

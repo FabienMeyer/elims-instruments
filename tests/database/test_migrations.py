@@ -48,14 +48,33 @@ def test_upgrade_creates_current_schema(tmp_path: Path) -> None:
                 "SELECT name FROM sqlite_master WHERE type = 'table'"
             )
         }
-        dut_columns = {
-            row[1] for row in connection.execute("PRAGMA table_info(duts)")
+        dut_columns = {row[1] for row in connection.execute("PRAGMA table_info(duts)")}
+        project_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(projects)")
+        }
+        project_dut_columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(project_supported_duts)")
+        }
+        project_board_columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(project_supported_boards)")
         }
         revision = connection.execute(
             "SELECT version_num FROM alembic_version"
         ).fetchone()
 
-    assert {"instruments", "boards", "duts"} <= tables
+    assert {
+        "instruments",
+        "boards",
+        "duts",
+        "projects",
+        "project_supported_duts",
+        "project_supported_boards",
+    } <= tables
     assert {"project", "corner", "revision"} <= dut_columns
     assert {"type", "maker", "model"}.isdisjoint(dut_columns)
-    assert revision == ("0001",)
+    assert project_columns == {"id", "name"}
+    assert project_dut_columns == {"project_id", "dut_id"}
+    assert project_board_columns == {"project_id", "board_id"}
+    assert revision == ("0003",)

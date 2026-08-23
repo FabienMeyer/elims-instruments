@@ -1,17 +1,15 @@
 """Base representation for devices under test."""
 
+from abc import ABC, abstractmethod
+
 from elims_instruments.database import DutModel
-from elims_instruments.utils.logger import get_logger
+from elims_instruments.utils.logger import LoggerHelper, get_logger
 
-logger = get_logger(__name__)
+logger = get_logger(__name__, LoggerHelper.Color.YELLOW)
 
 
-class Dut:
-    """Base DUT object backed by a validated IC database model.
-
-    Specialized DUT classes can add register maps, limits, or characterization
-    metadata. Communication remains the responsibility of the board fixture.
-    """
+class Dut(ABC):
+    """Base DUT object backed by a validated database model."""
 
     def __init__(self, dut: DutModel) -> None:
         """Initialize the DUT from its persisted identity."""
@@ -21,3 +19,8 @@ class Dut:
             type(self).__name__,
             dut.asset_tag,
         )
+
+    @abstractmethod
+    def get_id(self) -> str:
+        """Return the DUT identification."""
+        pass

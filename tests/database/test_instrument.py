@@ -218,9 +218,7 @@ def test_update_rejects_duplicate_asset_tag(repository: InstrumentCrud) -> None:
                 "type": "multimeter",
                 "maker": "Keysight",
                 "model": "34461A",
-                "connection": VisaConnection(
-                    resource_name=f"GPIB0::{number}::INSTR"
-                ),
+                "connection": VisaConnection(resource_name=f"GPIB0::{number}::INSTR"),
             }
         )
         for number in (1, 2)

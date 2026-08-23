@@ -22,9 +22,12 @@ from elims_instruments.database import (
     InstrumentCrud,
     InstrumentModel,
     InstrumentType,
+    ProjectCrud,
+    ProjectModel,
     USBConnection,
     VisaConnection,
 )
+from elims_instruments.duts import Dut, DutFactory
 from elims_instruments.instruments import (
     InstrumentAssetNotFoundError,
     InstrumentFactory,
@@ -32,6 +35,7 @@ from elims_instruments.instruments import (
 )
 from elims_instruments.instruments.counter.ks53220a import Keysight53220A
 from elims_instruments.instruments.multimeter.ks34401a import Keysight34401A
+from elims_instruments.projects import Project, ProjectFactory
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -59,9 +63,33 @@ class ProjectDutName(StrEnum):
     CHARACTERIZED_IC = "characterized_ic"
 
 
+class BenchProjectName(StrEnum):
+    """Project names authorized by the bench consumer."""
+
+    CHARACTERIZATION = "characterization"
+
+
+class DemoDut(Dut):
+    """Concrete DUT used by bench tests."""
+
+    def get_id(self) -> str:
+        """Return the database DUT ID."""
+        return self.dut.id
+
+
+class DemoProject(Project):
+    """Concrete project used by bench tests."""
+
+    def get_id(self) -> str:
+        """Return the database project ID."""
+        return self.project.id
+
+
 @pytest.fixture
 def bench_configuration(tmp_path: Path) -> Path:
     """Create a combined bench configuration and populated database."""
+    DutFactory.register("demo-project", DemoDut)
+    ProjectFactory.register("demo-project", DemoProject)
     configuration = tmp_path / "bench.toml"
     database = (tmp_path / "instruments.db").as_posix()
     configuration.write_text(
@@ -90,7 +118,7 @@ def bench_configuration(tmp_path: Path) -> Path:
         ]
     )
     board_repository = BoardCrud(logging.getLogger(__name__), configuration)
-    board_repository.add(
+    board = board_repository.add(
         BoardModel(
             id="board-1",
             asset_tag="BRD-001",
@@ -101,7 +129,7 @@ def bench_configuration(tmp_path: Path) -> Path:
         )
     )
     dut_repository = DutCrud(logging.getLogger(__name__), configuration)
-    dut_repository.add(
+    dut = dut_repository.add(
         DutModel(
             id="dut-1",
             asset_tag="DUT-001",
@@ -111,6 +139,11 @@ def bench_configuration(tmp_path: Path) -> Path:
             lot_number="LOT-001",
         )
     )
+    project = ProjectModel(id="project-1", name="demo-project")
+    project.supported_duts = [dut]
+    project.supported_boards = [board]
+    project_repository = ProjectCrud(logging.getLogger(__name__), configuration)
+    project_repository.add(project)
     return configuration
 
 
@@ -154,7 +187,9 @@ def test_bench_creates_named_drivers(
     assert isinstance(bench.instruments.primary_dmm, Keysight34401A)
     assert isinstance(bench.instruments["counter"], Keysight53220A)
     assert list(bench.instruments) == ["primary_dmm", "counter"]
-    assert "Loaded bench with 2 instruments, 0 boards, and 0 DUTs" in messages
+    assert (
+        "Loaded bench with 2 instruments, 0 boards, 0 DUTs, and 0 projects" in messages
+    )
     assert "Created Keysight34401A driver for asset DMM-001" in messages
     assert "Created Keysight53220A driver for asset CNT-001" in messages
 
@@ -196,6 +231,25 @@ def test_bench_creates_named_dut(bench_configuration: Path) -> None:
 
     assert bench.duts.characterized_ic.dut.asset_tag == "DUT-001"
     assert bench.boards.characterization_board.board.asset_tag == "BRD-001"
+
+
+def test_bench_creates_named_project(bench_configuration: Path) -> None:
+    """A project assignment resolves by its unique database name."""
+    _write_bench_configuration(
+        bench_configuration,
+        '[instruments]\nprimary_dmm = "DMM-001"\n'
+        '[projects]\ncharacterization = "demo-project"\n',
+    )
+
+    bench = Bench(
+        bench_configuration,
+        authorized_instrument_names=ProjectInstrumentName,
+        authorized_project_names=BenchProjectName,
+    )
+
+    assert isinstance(bench.projects.characterization, DemoProject)
+    assert bench.projects.characterization.get_id() == "project-1"
+    assert bench.projects.characterization.project.supported_duts[0].id == "dut-1"
 
 
 def test_bench_reads_configuration_once(
@@ -244,6 +298,25 @@ def test_bench_without_board_table_has_empty_board_collection(
     )
 
     assert len(bench.boards) == 0
+    assert len(bench.projects) == 0
+
+
+def test_bench_rejects_unauthorized_project_name(
+    bench_configuration: Path,
+) -> None:
+    """A project key must be authorized by the caller."""
+    _write_bench_configuration(
+        bench_configuration,
+        '[instruments]\nprimary_dmm = "DMM-001"\n'
+        '[projects]\nunexpected = "demo-project"\n',
+    )
+
+    with pytest.raises(BenchConfigurationError, match="unexpected"):
+        Bench(
+            bench_configuration,
+            authorized_instrument_names=ProjectInstrumentName,
+            authorized_project_names=BenchProjectName,
+        )
 
 
 def test_bench_rejects_missing_asset_tag(

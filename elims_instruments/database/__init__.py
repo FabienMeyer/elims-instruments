@@ -23,6 +23,7 @@ from .instrument import (
     parse_instrument_list,
 )
 from .migrations import upgrade_database
+from .project import ProjectCrud, ProjectModel, parse_project_list
 
 __all__ = [
     "BoardCrud",
@@ -39,11 +40,14 @@ __all__ = [
     "InstrumentCrud",
     "InstrumentModel",
     "InstrumentType",
+    "ProjectCrud",
+    "ProjectModel",
     "SocketConnection",
     "USBConnection",
     "VisaConnection",
     "parse_board_list",
     "parse_dut_list",
     "parse_instrument_list",
+    "parse_project_list",
     "upgrade_database",
 ]

@@ -227,32 +227,41 @@ class Crud(Generic[ModelT]):
 
     def upsert_many(self, records: Sequence[ModelT]) -> tuple[int, int]:
         """Insert missing records and fully update existing records by ID."""
-        records = [
-            self.model.model_validate(record.model_dump()) for record in records
-        ]
+        records = [self.model.model_validate(record.model_dump()) for record in records]
         identifiers = [record.model_dump()["id"] for record in records]
         if len(identifiers) != len(set(identifiers)):
             raise ValueError("The record list contains duplicate IDs")
-        asset_tags = [record.model_dump()["asset_tag"] for record in records]
-        seen_asset_tags: set[object] = set()
-        for asset_tag in asset_tags:
-            if asset_tag in seen_asset_tags:
-                raise DuplicateAssetTagError(str(asset_tag))
-            seen_asset_tags.add(asset_tag)
+        has_asset_tag = "asset_tag" in self.model.model_fields
+        asset_tags = (
+            [record.model_dump()["asset_tag"] for record in records]
+            if has_asset_tag
+            else []
+        )
+        if has_asset_tag:
+            seen_asset_tags: set[object] = set()
+            for asset_tag in asset_tags:
+                if asset_tag in seen_asset_tags:
+                    raise DuplicateAssetTagError(str(asset_tag))
+                seen_asset_tags.add(asset_tag)
 
         created = 0
         updated = 0
         with Session(self.engine) as session:
-            for identifier, asset_tag in zip(identifiers, asset_tags, strict=True):
-                statement = select(self.model).where(
-                    self._column("asset_tag") == asset_tag
-                )
-                existing = session.exec(statement).first()
-                if (
-                    existing is not None
-                    and existing.model_dump()["id"] != identifier
+            if has_asset_tag:
+                for identifier, asset_tag in zip(
+                    identifiers,
+                    asset_tags,
+                    strict=True,
                 ):
-                    raise DuplicateAssetTagError(str(asset_tag))
+                    statement = select(self.model).where(
+                        self._column("asset_tag") == asset_tag
+                    )
+                    existing = session.exec(statement).first()
+                    if (
+                        existing is not None
+                        and existing.model_dump()["id"] != identifier
+                    ):
+                        raise DuplicateAssetTagError(str(asset_tag))
 
             for incoming in records:
                 identifier = incoming.model_dump()["id"]
