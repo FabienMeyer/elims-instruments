@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 from typing import TYPE_CHECKING
 
 import pytest
 from pydantic import ValidationError
 
 from elims_instruments.database import (
+    CalibrationStatus,
     DuplicateAssetTagError,
     InstrumentCrud,
     InstrumentModel,
+    InstrumentRevisionAction,
     InstrumentType,
     SocketConnection,
     VisaConnection,
@@ -41,6 +44,10 @@ def test_socket_instrument_round_trip(repository: InstrumentCrud) -> None:
         type=InstrumentType.OSCILLOSCOPE,
         maker="Keysight",
         model="DSOX1204G",
+        calibration_date=date(2026, 1, 15),
+        calibration_due_date=date(2027, 1, 15),
+        calibration_certificate_number="CAL-2026-001",
+        calibration_status=CalibrationStatus.VALID,
         connection=SocketConnection(ip_address="192.168.1.10", port=5025),
     )
 
@@ -51,7 +58,48 @@ def test_socket_instrument_round_trip(repository: InstrumentCrud) -> None:
     assert stored.type is InstrumentType.OSCILLOSCOPE
     assert isinstance(stored.connection, SocketConnection)
     assert stored.connection.port == 5025
+    assert stored.calibration_date == date(2026, 1, 15)
+    assert stored.calibration_due_date == date(2027, 1, 15)
+    assert stored.calibration_certificate_number == "CAL-2026-001"
+    assert stored.calibration_status is CalibrationStatus.VALID
     assert repository.fetchall() == [stored]
+
+
+def test_calibration_due_date_cannot_precede_calibration_date() -> None:
+    """Calibration date ranges are validated before persistence."""
+    with pytest.raises(ValidationError, match="calibration_due_date"):
+        InstrumentModel.model_validate(
+            {
+                "id": "dmm-1",
+                "asset_tag": "DMM-001",
+                "type": "multimeter",
+                "maker": "Keysight",
+                "model": "34465A",
+                "calibration_date": "2026-09-06",
+                "calibration_due_date": "2026-09-05",
+                "connection": VisaConnection(resource_name="GPIB0::1::INSTR"),
+            }
+        )
+
+
+def test_calibration_status_is_validated_and_defaults_to_unknown() -> None:
+    """Calibration status uses the declared lifecycle states."""
+    instrument_data = {
+        "id": "dmm-1",
+        "asset_tag": "DMM-001",
+        "type": "multimeter",
+        "maker": "Keysight",
+        "model": "34465A",
+        "connection": VisaConnection(resource_name="GPIB0::1::INSTR"),
+    }
+
+    instrument = InstrumentModel.model_validate(instrument_data)
+
+    assert instrument.calibration_status is CalibrationStatus.UNKNOWN
+    with pytest.raises(ValidationError, match="calibration_status"):
+        InstrumentModel.model_validate(
+            {**instrument_data, "calibration_status": "unrecognized"}
+        )
 
 
 def test_visa_instrument_can_be_updated_by_asset_tag_and_removed(
@@ -75,6 +123,57 @@ def test_visa_instrument_can_be_updated_by_asset_tag_and_removed(
     assert updated.model == "34465A"
     assert repository.remove("id", "dmm-1") is True
     assert repository.remove("id", "dmm-1") is False
+
+
+def test_instrument_changes_are_audited_and_historically_queryable(
+    repository: InstrumentCrud,
+) -> None:
+    """Every state change is retained while normal reads return the latest state."""
+    instrument = InstrumentModel(
+        id="dmm-1",
+        asset_tag="DMM-001",
+        type=InstrumentType.MULTIMETER,
+        maker="Keysight",
+        model="34461A",
+        connection=VisaConnection(resource_name="GPIB0::1::INSTR"),
+    )
+    repository.add(instrument)
+    created_revision = repository.history("DMM-001")[0]
+
+    updated = repository.update_by_asset_tag("DMM-001", {"model": "34465A"})
+
+    assert updated is not None
+    assert repository.fetch("asset_tag", "DMM-001").model == "34465A"
+    revisions = repository.history("DMM-001")
+    assert [revision.action for revision in revisions] == [
+        InstrumentRevisionAction.CREATED,
+        InstrumentRevisionAction.UPDATED,
+    ]
+    assert revisions[0].snapshot["model"] == "34461A"
+    assert revisions[1].snapshot["model"] == "34465A"
+    historical = repository.fetch_at("DMM-001", created_revision.recorded_at)
+    assert historical is not None
+    assert historical.model == "34461A"
+
+    repository.upsert_many([updated])
+    assert len(repository.history_for_instrument("dmm-1")) == 2
+
+    renamed = repository.update_by_asset_tag(
+        "DMM-001",
+        {"asset_tag": "DMM-NEW"},
+    )
+    assert renamed is not None
+    renamed_revision = repository.history("DMM-NEW")[-1]
+    assert repository.fetch_at("DMM-001", renamed_revision.recorded_at) is None
+    historical = repository.fetch_at("DMM-NEW", renamed_revision.recorded_at)
+    assert historical is not None
+    assert historical.asset_tag == "DMM-NEW"
+    assert len(repository.history_for_instrument("dmm-1")) == 3
+
+    assert repository.remove("asset_tag", "DMM-NEW") is True
+    revisions = repository.history("DMM-NEW")
+    assert revisions[-1].action is InstrumentRevisionAction.DELETED
+    assert repository.fetch_at("DMM-NEW", revisions[-1].recorded_at) is None
 
 
 def test_unknown_field_is_rejected(repository: InstrumentCrud) -> None:

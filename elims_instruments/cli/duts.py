@@ -19,7 +19,7 @@ from elims_instruments.database import (
 )
 from elims_instruments.utils.logger import get_cli_logger
 
-from .common import managed_repository
+from .common import ConfigurationOption, managed_repository
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
@@ -28,19 +28,6 @@ app = typer.Typer(
     help="Manage the ELIMS DUT database.",
     no_args_is_help=True,
 )
-
-ConfigurationOption = Annotated[
-    Path,
-    typer.Option(
-        "--config",
-        "-c",
-        help="Bench TOML configuration file.",
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-    ),
-]
 
 
 def _repository(configuration: Path) -> AbstractContextManager[DutCrud]:
@@ -61,8 +48,19 @@ def add(
     asset_tag: Annotated[str, typer.Option(help="Unique DUT asset tag.")],
     project: Annotated[str, typer.Option(help="Owning project.")],
     corner: Annotated[str, typer.Option(help="Process corner.")],
-    revision: Annotated[str, typer.Option(help="DUT revision.")],
+    die_revision: Annotated[
+        str,
+        typer.Option(help="Die/base-layer revision, for example A."),
+    ],
     configuration: ConfigurationOption = Path("bench.toml"),
+    metal_revision: Annotated[
+        int | None,
+        typer.Option(min=0, help="Metal-layer revision, for example 0."),
+    ] = None,
+    package_revision: Annotated[
+        str | None,
+        typer.Option(help="Package revision, for example R1."),
+    ] = None,
     serial_number: Annotated[str | None, typer.Option()] = None,
     lot_number: Annotated[str | None, typer.Option()] = None,
     wafer_id: Annotated[str | None, typer.Option()] = None,
@@ -77,7 +75,9 @@ def add(
                 "asset_tag": asset_tag,
                 "project": project,
                 "corner": corner,
-                "revision": revision,
+                "die_revision": die_revision,
+                "metal_revision": metal_revision,
+                "package_revision": package_revision,
                 "serial_number": serial_number,
                 "lot_number": lot_number,
                 "wafer_id": wafer_id,
@@ -112,7 +112,7 @@ def get_by_id(
     _write_dut(dut)
 
 
-@app.command("gets")
+@app.command("list")
 def fetch_all(
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
@@ -123,13 +123,15 @@ def fetch_all(
 
 
 @app.command("update")
-def update_by_asset_tag(
-    asset_tag: Annotated[str, typer.Argument(help="Current DUT asset tag.")],
+def update_by_id(
+    dut_id: Annotated[str, typer.Argument(help="DUT ID.")],
     configuration: ConfigurationOption = Path("bench.toml"),
     new_asset_tag: Annotated[str | None, typer.Option("--asset-tag")] = None,
     project: Annotated[str | None, typer.Option()] = None,
     corner: Annotated[str | None, typer.Option()] = None,
-    revision: Annotated[str | None, typer.Option()] = None,
+    die_revision: Annotated[str | None, typer.Option()] = None,
+    metal_revision: Annotated[int | None, typer.Option(min=0)] = None,
+    package_revision: Annotated[str | None, typer.Option()] = None,
     serial_number: Annotated[str | None, typer.Option()] = None,
     lot_number: Annotated[str | None, typer.Option()] = None,
     wafer_id: Annotated[str | None, typer.Option()] = None,
@@ -140,14 +142,16 @@ def update_by_asset_tag(
     clear_wafer_id: Annotated[bool, typer.Option()] = False,
     clear_die_position: Annotated[bool, typer.Option()] = False,
 ) -> None:
-    """Update a DUT selected by its current asset tag."""
+    """Update a DUT selected by ID."""
     changes: dict[str, object] = {
         field: value
         for field, value in {
             "asset_tag": new_asset_tag,
             "project": project,
             "corner": corner,
-            "revision": revision,
+            "die_revision": die_revision,
+            "metal_revision": metal_revision,
+            "package_revision": package_revision,
             "serial_number": serial_number,
             "lot_number": lot_number,
             "wafer_id": wafer_id,
@@ -170,7 +174,12 @@ def update_by_asset_tag(
 
     try:
         with _repository(configuration) as repository:
-            dut = repository.update_by_asset_tag(asset_tag, changes)
+            stored = repository.fetch("id", dut_id)
+            dut = (
+                None
+                if stored is None
+                else repository.update_by_asset_tag(stored.asset_tag, changes)
+            )
     except ValidationError as error:
         raise typer.BadParameter(str(error)) from error
     except DuplicateAssetTagError as error:
@@ -180,7 +189,7 @@ def update_by_asset_tag(
         typer.echo("DUT asset tag already exists", err=True)
         raise typer.Exit(code=1) from error
     if dut is None:
-        typer.echo(f"DUT asset tag not found: {asset_tag}", err=True)
+        typer.echo(f"DUT not found: {dut_id}", err=True)
         raise typer.Exit(code=1)
     _write_dut(dut)
 

@@ -1,0 +1,33 @@
+- die_revision: A
+  metal_revision: 0
+  package_revision: R1
+  voltage_specifications:
+    - name: VDD
+      voltage_limits:
+        minimum: 1.1
+        typical: 1.2
+        maximum: 1.3
+      current_limits: null
+  temperature_specifications:
+    - name: DUT
+      temperature_limits:
+        minimum: -40
+        typical: 25
+        maximum: 125
+
+- die_revision: B
+  metal_revision: 1
+  package_revision: R2
+  voltage_specifications:
+    - name: VDD
+      voltage_limits:
+        minimum: 0.85
+        typical: 0.9
+        maximum: 0.95
+      current_limits: null
+  temperature_specifications:
+    - name: DUT
+      temperature_limits:
+        minimum: -20
+        typical: 30
+        maximum: 100.1

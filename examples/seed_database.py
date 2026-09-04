@@ -1,8 +1,9 @@
-"""Populate the SQLite database stored with the bench examples."""
+"""Populate the SQLite database used by all examples."""
+
+from __future__ import annotations
 
 import logging
-
-from show_bench import EXAMPLE_CONFIGURATION
+from pathlib import Path
 
 from elims_instruments.database import (
     BoardCrud,
@@ -14,15 +15,22 @@ from elims_instruments.database import (
     InstrumentType,
     ProjectCrud,
     ProjectModel,
+    ProjectRevisionSpecifications,
     USBConnection,
     VisaConnection,
 )
+from elims_instruments.temperatures import TemperatureSpecification
+from elims_instruments.utils import Limits
+from elims_instruments.voltages import VoltageSpecification
+
+CONFIGURATION = Path(__file__).with_name("bench.toml")
 
 
-def seed_database() -> None:
-    """Insert or update every asset referenced by the example bench."""
-    repository_logger = logging.getLogger(__name__)
-    instruments = InstrumentCrud(repository_logger, EXAMPLE_CONFIGURATION)
+def main() -> None:
+    """Insert or update every resource referenced by the example bench."""
+    logger = logging.getLogger(__name__)
+
+    instruments = InstrumentCrud(logger, CONFIGURATION)
     try:
         instruments.upsert_many(
             [
@@ -32,7 +40,9 @@ def seed_database() -> None:
                     type=InstrumentType.MULTIMETER,
                     maker="Keysight",
                     model="34401A",
-                    connection=VisaConnection(resource_name="GPIB0::1::INSTR"),
+                    connection=VisaConnection(
+                        resource_name="GPIB0::1::INSTR"
+                    ),
                 ),
                 InstrumentModel(
                     id="demo-counter",
@@ -40,7 +50,9 @@ def seed_database() -> None:
                     type=InstrumentType.COUNTER,
                     maker="Keysight",
                     model="53220A",
-                    connection=VisaConnection(resource_name="GPIB0::2::INSTR"),
+                    connection=VisaConnection(
+                        resource_name="GPIB0::2::INSTR"
+                    ),
                 ),
             ]
         )
@@ -55,7 +67,7 @@ def seed_database() -> None:
         model="Demo Characterization Board",
         connection=USBConnection(vendor_id=0x1209, product_id=0x0001),
     )
-    boards = BoardCrud(repository_logger, EXAMPLE_CONFIGURATION)
+    boards = BoardCrud(logger, CONFIGURATION)
     try:
         boards.upsert_many([board])
     finally:
@@ -64,29 +76,65 @@ def seed_database() -> None:
     dut = DutModel(
         id="demo-dut",
         asset_tag="DUT-001",
-        project="demo-project",
+        project="example-project",
         corner="TT",
-        revision="A",
+        die_revision="A",
+        metal_revision=0,
+        package_revision="R1",
         lot_number="LOT-001",
         wafer_id="W01",
         die_x=12,
         die_y=8,
     )
-    duts = DutCrud(repository_logger, EXAMPLE_CONFIGURATION)
+    duts = DutCrud(logger, CONFIGURATION)
     try:
         duts.upsert_many([dut])
     finally:
         duts.engine.dispose()
 
-    project = ProjectModel(id="demo-project", name="demo-project")
-    project.supported_duts = [dut]
+    project = ProjectModel(
+        id="project-1",
+        internal_name="example-project",
+        datasheet_name="Example IC Characterization",
+        specifications=[
+            ProjectRevisionSpecifications(
+                die_revision="A",
+                metal_revision=0,
+                package_revision="R1",
+                voltage_specifications=[
+                    VoltageSpecification(
+                        name="VDD",
+                        voltage_limits=Limits(
+                            minimum=1.14,
+                            typical=1.20,
+                            maximum=1.26,
+                        ),
+                    )
+                ],
+                temperature_specifications=[
+                    TemperatureSpecification(
+                        name="DUT",
+                        temperature_limits=Limits(
+                            minimum=-40,
+                            typical=25,
+                            maximum=125,
+                        ),
+                    )
+                ],
+            )
+        ],
+    )
     project.supported_boards = [board]
-    projects = ProjectCrud(repository_logger, EXAMPLE_CONFIGURATION)
+    project.supported_duts = [dut]
+
+    projects = ProjectCrud(logger, CONFIGURATION)
     try:
         projects.upsert_many([project])
     finally:
         projects.engine.dispose()
 
+    print(f"Seeded example database: {CONFIGURATION}")
+
 
 if __name__ == "__main__":
-    seed_database()
+    main()

@@ -38,6 +38,22 @@ def test_voltage_specification_is_immutable() -> None:
         spec.name = "VDD_IO"  # type: ignore[misc]
 
 
+@pytest.mark.parametrize(
+    "name",
+    ["", " VDD", "VDD ", "V DD", "VDD-CORE", "_VDD", "VDD_", "VDD__CORE"],
+)
+def test_voltage_specification_rejects_invalid_names(name: str) -> None:
+    """Whitespace, unsupported symbols, and misplaced underscores are rejected."""
+    with pytest.raises(ValueError, match="underscores allowed only between"):
+        rail_spec(name)
+
+
+def test_voltage_specification_name_must_be_a_string() -> None:
+    """Runtime validation rejects non-string rail names clearly."""
+    with pytest.raises(TypeError, match="Voltage name must be a string"):
+        rail_spec(1)  # type: ignore[arg-type]
+
+
 def test_voltage_logs_initialization() -> None:
     """A voltage reports its concrete type and validated rail details."""
     records: list[dict[str, object]] = []
@@ -116,6 +132,8 @@ def test_fixed_voltage_describes_board_rail() -> None:
     assert not hasattr(voltage, "absolute_maximum_voltage")
     assert not hasattr(voltage, "set_voltage")
     assert not hasattr(voltage, "apply")
+    with pytest.raises(AttributeError):
+        voltage.setpoint = 3.2  # type: ignore[misc]
 
 
 def test_adjustable_voltage_applies_setpoints() -> None:
@@ -164,6 +182,29 @@ def test_adjustable_voltage_rejects_unsafe_setpoint() -> None:
 
     assert applied == []
     assert voltage.setpoint == 1.2
+
+
+def test_failed_voltage_write_preserves_previous_setpoint() -> None:
+    """A hardware failure does not make the cached state report success."""
+    voltage = AdjustableVoltage(
+        rail_spec(voltage_limits=Limits(minimum=0.8, typical=1.2, maximum=1.4)),
+        voltage_setter=lambda _value: (_ for _ in ()).throw(OSError("write failed")),
+    )
+
+    with pytest.raises(OSError, match="write failed"):
+        voltage.set_voltage(1.1)
+
+    assert voltage.setpoint == 1.2
+
+
+def test_measurements_require_getters() -> None:
+    """Unavailable measurements fail explicitly instead of returning NaN."""
+    voltage = FixedVoltage(rail_spec())
+
+    with pytest.raises(NotImplementedError, match="Cannot measure voltage"):
+        voltage.get_voltage()
+    with pytest.raises(NotImplementedError, match="Cannot measure current"):
+        voltage.get_current()
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf")])

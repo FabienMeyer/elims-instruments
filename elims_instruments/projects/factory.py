@@ -40,18 +40,18 @@ class ProjectFactory:
     @classmethod
     def create(cls, project: ProjectModel) -> Project:
         """Create the concrete project registered for a database model."""
-        project_key = project.name.strip().casefold()
+        project_key = project.internal_name.strip().casefold()
         if project_key not in cls._registry:
             available = ", ".join(cls._registry)
             raise ValueError(
-                f"Unknown project: '{project.name}'. "
+                f"Unknown project: '{project.internal_name}'. "
                 f"Available projects: {available or 'None registered yet'}"
             )
         builder = cls._registry[project_key]
         logger.debug(
             "Creating {} for project {}",
             getattr(builder, "__name__", type(builder).__name__),
-            project.name,
+            project.internal_name,
         )
         instance = builder(project)
         if not isinstance(instance, Project):
@@ -105,7 +105,7 @@ def create_projects(
     try:
         for name, project_name in assignments.items():
             logger.debug("Resolving project {} from name {}", name, project_name)
-            project = repository.fetch("name", project_name)
+            project = repository.fetch("internal_name", project_name)
             if project is None:
                 raise ProjectNotFoundError(project_name)
             projects[name] = ProjectFactory.create(project)

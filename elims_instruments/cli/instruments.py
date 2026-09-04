@@ -24,7 +24,7 @@ from elims_instruments.database import (
 )
 from elims_instruments.utils.logger import get_cli_logger
 
-from .common import managed_repository
+from .common import ConfigurationOption, managed_repository
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
@@ -33,19 +33,6 @@ app = typer.Typer(
     help="Manage the ELIMS instrument database.",
     no_args_is_help=True,
 )
-
-ConfigurationOption = Annotated[
-    Path,
-    typer.Option(
-        "--config",
-        "-c",
-        help="Bench TOML configuration file.",
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-    ),
-]
 
 
 def _repository(configuration: Path) -> AbstractContextManager[InstrumentCrud]:
@@ -169,7 +156,7 @@ def get_by_id(
     _write_instrument(instrument)
 
 
-@app.command("gets")
+@app.command("list")
 def fetch_all(
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
@@ -185,8 +172,8 @@ def fetch_all(
 
 
 @app.command("update")
-def update_by_asset_tag(
-    asset_tag: Annotated[str, typer.Argument(help="Current instrument asset tag.")],
+def update_by_id(
+    instrument_id: Annotated[str, typer.Argument(help="Instrument ID.")],
     configuration: ConfigurationOption = Path("bench.toml"),
     new_asset_tag: Annotated[str | None, typer.Option("--asset-tag")] = None,
     instrument_type: Annotated[
@@ -204,7 +191,7 @@ def update_by_asset_tag(
     resource_name: Annotated[str | None, typer.Option()] = None,
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
-    """Update an instrument selected by its current asset tag."""
+    """Update an instrument selected by ID."""
     changes: dict[str, object] = {
         field: value
         for field, value in {
@@ -232,7 +219,12 @@ def update_by_asset_tag(
 
     try:
         with _repository(configuration) as repository:
-            instrument = repository.update_by_asset_tag(asset_tag, changes)
+            stored = repository.fetch("id", instrument_id)
+            instrument = (
+                None
+                if stored is None
+                else repository.update_by_asset_tag(stored.asset_tag, changes)
+            )
     except ValidationError as error:
         raise typer.BadParameter(str(error)) from error
     except DuplicateAssetTagError as error:
@@ -242,7 +234,7 @@ def update_by_asset_tag(
         typer.echo("Instrument asset tag already exists", err=True)
         raise typer.Exit(code=1) from error
     if instrument is None:
-        typer.echo(f"Instrument asset tag not found: {asset_tag}", err=True)
+        typer.echo(f"Instrument not found: {instrument_id}", err=True)
         raise typer.Exit(code=1)
     _write_instrument(instrument)
 

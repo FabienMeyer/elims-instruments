@@ -62,7 +62,8 @@ class CharacterizationProject(Project):
 ProjectFactory.register("demo-project", CharacterizationProject)
 ```
 
-The registry key matches `ProjectModel.name`.
+The registry key matches `ProjectModel.internal_name`; `datasheet_name` is the
+client-facing name and does not affect driver selection.
 
 ## Registration guidance
 

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
-from math import nan
 from typing import TYPE_CHECKING
 
 from elims_instruments.utils.logger import LoggerHelper, get_logger
@@ -20,6 +20,7 @@ VoltageGetter = Callable[[], float]
 CurrentGetter = Callable[[], float]
 CurrentLimitSetter = Callable[[float], None]
 
+_VOLTAGE_NAME_PATTERN = re.compile(r"[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*")
 
 @dataclass(frozen=True, slots=True)
 class VoltageSpecification:
@@ -28,6 +29,17 @@ class VoltageSpecification:
     name: str
     voltage_limits: Limits
     current_limits: Limits | None = None
+
+    def __post_init__(self) -> None:
+        """Require an ASCII alphanumeric rail name with optional separators."""
+        if not isinstance(self.name, str):
+            raise TypeError("Voltage name must be a string")
+        if _VOLTAGE_NAME_PATTERN.fullmatch(self.name) is None:
+            raise ValueError(
+                "Voltage name must contain ASCII letters and numbers, with "
+                "underscores allowed only between name segments; whitespace "
+                "and other symbols are not allowed"
+            )
 
 
 class Voltage(ABC):
@@ -68,33 +80,29 @@ class Voltage(ABC):
         """Return the configured voltage, which is not a measured value."""
         return self._voltage_setpoint
 
-    @setpoint.setter
-    def setpoint(self, value: int | float) -> None:
-        """Validate and store a new voltage setpoint."""
-        self._voltage_setpoint = self.voltage_limits.validate(
-            value,
-            label=f"voltage for {self.name!r}",
-        )
-
     @property
     def current_limit_setpoint(self) -> int | float | None:
         """Return the configured current limit, or ``None`` when unspecified."""
         return self._current_limit_setpoint
 
     def get_voltage(self) -> float:
-        """Return the measured voltage, or NaN if not supported."""
+        """Return the measured voltage."""
         if self._voltage_getter is None:
-            logger.debug("Voltage measurement is unavailable for {!r}", self.name)
-            return nan
+            raise NotImplementedError(
+                f"Cannot measure voltage for {self.name!r} because the getter is "
+                "not provided."
+            )
         voltage = self._voltage_getter()
         logger.debug("Measured voltage {!r}: {} V", self.name, voltage)
         return voltage
 
     def get_current(self) -> float:
-        """Return the measured current, or NaN if not supported."""
+        """Return the measured current."""
         if self._current_getter is None:
-            logger.debug("Current measurement is unavailable for {!r}", self.name)
-            return nan
+            raise NotImplementedError(
+                f"Cannot measure current for {self.name!r} because the getter is "
+                "not provided."
+            )
         current = self._current_getter()
         logger.debug("Measured current for voltage {!r}: {} A", self.name, current)
         return current
@@ -153,15 +161,32 @@ class AdjustableVoltage(Voltage):
         self._current_limit_setter = current_limit_setter
 
     @property
+    def setpoint(self) -> int | float:
+        """Return the configured voltage setpoint."""
+        return self._voltage_setpoint
+
+    @setpoint.setter
+    def setpoint(self, value: int | float) -> None:
+        """Validate and store a new voltage setpoint."""
+        self._voltage_setpoint = self.voltage_limits.validate(
+            value,
+            label=f"voltage for {self.name!r}",
+        )
+
+    @property
     def is_adjustable(self) -> bool:
         """Return ``True`` because an instrument controls this voltage."""
         return True
 
     def set_voltage(self, voltage: float) -> None:
         """Validate and apply a new voltage setpoint."""
-        self.setpoint = voltage
-        self._voltage_setter(self._voltage_setpoint)
-        logger.info("Set voltage {!r} to {} V", self.name, self._voltage_setpoint)
+        value = self.voltage_limits.validate(
+            voltage,
+            label=f"voltage for {self.name!r}",
+        )
+        self._voltage_setter(value)
+        self._voltage_setpoint = value
+        logger.info("Set voltage {!r} to {} V", self.name, value)
 
     def apply(self) -> None:
         """Apply the currently configured voltage setpoint."""

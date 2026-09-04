@@ -14,14 +14,15 @@ uv run pytest
 The CLI manages instruments, boards, DUTs, and projects in the configured database:
 
 ```powershell
-uv run elims instruments gets --config bench.toml
-uv run elims boards gets --config bench.toml
-uv run elims duts gets --config bench.toml
-uv run elims projects gets --config bench.toml
+uv run elims instruments list --config bench.toml
+uv run elims boards list --config bench.toml
+uv run elims duts list --config bench.toml
+uv run elims projects list --config bench.toml
 ```
 
-Each group supports `add`, `get`, `gets`, `update`, `delete`, `sync`, and
-`export`. Run `uv run elims GROUP --help` for its options.
+Each group supports `add`, `get`, `list`, `update`, `delete`, `sync`, and
+`export`. Single-record commands use the database ID. Run
+`uv run elims GROUP --help` for complete options.
 
 Upgrade an existing database after pulling schema changes:
 
@@ -41,15 +42,24 @@ uv run elims boards add board-1 --asset-tag BRD-001 `
   --connection usb --vendor-id 4617 --product-id 1
 
 uv run elims duts add dut-1 --asset-tag DUT-001 `
-  --project demo-project --corner TT --revision A
+  --project demo-project --corner TT --die-revision A `
+  --metal-revision 0 --package-revision R1
 
-uv run elims projects add project-1 --name demo-project `
-  --dut DUT-001 --board BRD-001
+uv run elims projects add project-1 --internal-name demo-project `
+  --datasheet-name "ELIMS Demo IC" `
+  --dut DUT-001 --board BRD-001 `
+  --die-revision A --metal-revision 0 --package-revision R1 `
+  --voltage-name VDD --voltage-minimum 1.1 `
+  --voltage-typical 1.2 --voltage-maximum 1.3 `
+  --temperature-name DUT --temperature-minimum -40 `
+  --temperature-typical 25 --temperature-maximum 125
 ```
 
 ## Bench configuration
 
-Instruments and boards are reusable assets. A DUT belongs to one project.
+Instruments and boards are reusable assets. A DUT belongs to one project. Each
+project has an internal name for code and configuration and a client-facing
+datasheet name.
 Names in `bench.toml` are project-defined roles that point to asset tags:
 
 ```toml

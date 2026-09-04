@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import yaml
+from click import unstyle
 from typer.testing import CliRunner
 
 from elims_instruments.cli.boards import app
@@ -57,13 +58,13 @@ def test_cli_crud_lifecycle(configuration: Path) -> None:
     assert fetched.exit_code == 0
     assert json.loads(fetched.stdout)["model"] == "CTRL-1"
 
-    listed = runner.invoke(app, ["gets", *common])
+    listed = runner.invoke(app, ["list", *common])
     assert listed.exit_code == 0
     assert len(json.loads(listed.stdout)) == 1
 
     updated = runner.invoke(
         app,
-        ["update", "BOARD-001", "--model", "CTRL-2", *common],
+        ["update", "board-1", "--model", "CTRL-2", *common],
     )
     assert updated.exit_code == 0
     assert json.loads(updated.stdout)["model"] == "CTRL-2"
@@ -95,8 +96,9 @@ def test_add_rejects_incomplete_socket_connection(configuration: Path) -> None:
     )
 
     assert result.exit_code == 2
-    assert "ip-address" in result.output
-    assert "port" in result.output
+    output = unstyle(result.output)
+    assert "ip-address" in output
+    assert "port" in output
 
 
 def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:
