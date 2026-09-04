@@ -54,6 +54,18 @@ def test_temperature_measurement_is_optional() -> None:
     assert isnan(temperature.get_temperature())
 
 
+def test_temperature_control_is_optional() -> None:
+    """Control operations fail clearly when no setter is configured."""
+    temperature = Temperature(temperature_specification())
+
+    assert not temperature.is_adjustable
+    with pytest.raises(NotImplementedError, match="setter is not provided"):
+        temperature.set_temperature(30)
+    with pytest.raises(NotImplementedError, match="setter is not provided"):
+        temperature.apply()
+    assert temperature.setpoint == 25
+
+
 def test_temperature_reads_configured_getter() -> None:
     """Measurement delegates to the configured instrument getter."""
     temperature = Temperature(

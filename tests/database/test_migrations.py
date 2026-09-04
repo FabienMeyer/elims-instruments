@@ -49,6 +49,13 @@ def test_upgrade_creates_current_schema(tmp_path: Path) -> None:
             )
         }
         dut_columns = {row[1] for row in connection.execute("PRAGMA table_info(duts)")}
+        instrument_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(instruments)")
+        }
+        instrument_revision_columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(instrument_revisions)")
+        }
         project_columns = {
             row[1] for row in connection.execute("PRAGMA table_info(projects)")
         }
@@ -66,15 +73,42 @@ def test_upgrade_creates_current_schema(tmp_path: Path) -> None:
 
     assert {
         "instruments",
+        "instrument_revisions",
         "boards",
         "duts",
         "projects",
         "project_supported_duts",
         "project_supported_boards",
     } <= tables
-    assert {"project", "corner", "revision"} <= dut_columns
+    assert {
+        "project",
+        "corner",
+        "die_revision",
+        "metal_revision",
+        "package_revision",
+    } <= dut_columns
+    assert "revision" not in dut_columns
     assert {"type", "maker", "model"}.isdisjoint(dut_columns)
-    assert project_columns == {"id", "name"}
+    assert {
+        "calibration_date",
+        "calibration_due_date",
+        "calibration_certificate_number",
+        "calibration_status",
+    } <= instrument_columns
+    assert instrument_revision_columns == {
+        "id",
+        "instrument_id",
+        "asset_tag",
+        "recorded_at",
+        "action",
+        "snapshot",
+    }
+    assert project_columns == {
+        "id",
+        "internal_name",
+        "datasheet_name",
+        "specifications",
+    }
     assert project_dut_columns == {"project_id", "dut_id"}
     assert project_board_columns == {"project_id", "board_id"}
-    assert revision == ("0003",)
+    assert revision == ("0001",)

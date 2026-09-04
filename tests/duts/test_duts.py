@@ -26,6 +26,10 @@ class CharacterizationDut(Dut):
         """Return the database DUT ID."""
         return self.dut.id
 
+    def reset(self) -> None:
+        """Reset this test DUT."""
+        super().reset()
+
 
 @pytest.fixture
 def bench_configuration(tmp_path: Path) -> Path:
@@ -43,7 +47,7 @@ def bench_configuration(tmp_path: Path) -> Path:
             asset_tag="DUT-001",
             project="demo-project",
             corner="TT",
-            revision="A",
+            die_revision="A",
             lot_number="LOT-001",
         )
     )
@@ -68,7 +72,7 @@ def test_factory_normalizes_registered_project() -> None:
         asset_tag="DUT-002",
         project="registered-project",
         corner="SS",
-        revision="B",
+        die_revision="B",
     )
     DutFactory.register(" Registered-Project ", CharacterizationDut)
 
@@ -82,7 +86,7 @@ def test_factory_rejects_unregistered_project() -> None:
         asset_tag="DUT-003",
         project="unregistered-project",
         corner="TT",
-        revision="A",
+        die_revision="A",
     )
 
     with pytest.raises(ValueError, match="Unknown DUT project"):

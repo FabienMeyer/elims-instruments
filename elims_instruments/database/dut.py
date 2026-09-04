@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated, Self
 
-from pydantic import StringConstraints, TypeAdapter, model_validator
+from pydantic import BeforeValidator, StringConstraints, TypeAdapter, model_validator
 from sqlmodel import Field, SQLModel
 
 from .crud import Crud, DebugLogger
@@ -17,6 +17,23 @@ NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_len
 AssetTag = Annotated[str, StringConstraints(strip_whitespace=True, min_length=5)]
 
 
+def _normalize_revision(value: object) -> object:
+    """Normalize string revision values before pattern validation."""
+    return value.strip().upper() if isinstance(value, str) else value
+
+
+DieRevision = Annotated[
+    str,
+    BeforeValidator(_normalize_revision),
+    StringConstraints(pattern=r"^[A-Z]+$"),
+]
+PackageRevision = Annotated[
+    str,
+    BeforeValidator(_normalize_revision),
+    StringConstraints(pattern=r"^R[1-9]\d*$"),
+]
+
+
 class DutModel(SQLModel, table=True):
     """An IC DUT record and its manufacturing traceability."""
 
@@ -26,7 +43,9 @@ class DutModel(SQLModel, table=True):
     asset_tag: AssetTag = Field(unique=True, index=True)
     project: NonEmptyString = Field(index=True)
     corner: NonEmptyString = Field(index=True)
-    revision: NonEmptyString = Field(index=True)
+    die_revision: DieRevision = Field(index=True)
+    metal_revision: int | None = Field(default=None, ge=0, index=True)
+    package_revision: PackageRevision | None = Field(default=None, index=True)
     serial_number: NonEmptyString | None = Field(default=None, index=True)
     lot_number: NonEmptyString | None = Field(default=None, index=True)
     wafer_id: NonEmptyString | None = Field(default=None, index=True)

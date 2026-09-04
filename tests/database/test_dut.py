@@ -33,7 +33,9 @@ def test_ic_dut_round_trip(repository: DutCrud) -> None:
         asset_tag="DUT-001",
         project="demo-project",
         corner="TT",
-        revision="A",
+        die_revision="A",
+        metal_revision=0,
+        package_revision="R1",
         lot_number="LOT-001",
         wafer_id="W01",
         die_x=12,
@@ -46,7 +48,9 @@ def test_ic_dut_round_trip(repository: DutCrud) -> None:
     assert stored is not None
     assert stored.project == "demo-project"
     assert stored.corner == "TT"
-    assert stored.revision == "A"
+    assert stored.die_revision == "A"
+    assert stored.metal_revision == 0
+    assert stored.package_revision == "R1"
     assert stored.lot_number == "LOT-001"
     assert (stored.die_x, stored.die_y) == (12, 8)
 
@@ -60,7 +64,9 @@ def test_parse_dut_list_validates_records() -> None:
                 "asset_tag": "DUT-002",
                 "project": "demo-project",
                 "corner": "FF",
-                "revision": "B",
+                "die_revision": "B",
+                "metal_revision": 1,
+                "package_revision": "R2",
             }
         ]
     )
@@ -79,13 +85,17 @@ def test_dut_validation_normalizes_identity() -> None:
             "asset_tag": " DUT-001 ",
             "project": " demo-project ",
             "corner": " TT ",
-            "revision": " A ",
+            "die_revision": " a ",
+            "metal_revision": 0,
+            "package_revision": " r1 ",
         }
     )
 
     assert dut.id == "dut-1"
     assert dut.asset_tag == "DUT-001"
     assert dut.project == "demo-project"
+    assert dut.die_revision == "A"
+    assert dut.package_revision == "R1"
 
     with pytest.raises(ValidationError):
         DutModel.model_validate(
@@ -94,7 +104,7 @@ def test_dut_validation_normalizes_identity() -> None:
                 "asset_tag": "DUT-002",
                 "project": " ",
                 "corner": "TT",
-                "revision": "A",
+                "die_revision": "A",
             }
         )
 
@@ -108,7 +118,7 @@ def test_dut_validation_requires_complete_die_position() -> None:
                 "asset_tag": "DUT-001",
                 "project": "demo-project",
                 "corner": "TT",
-                "revision": "A",
+                "die_revision": "A",
                 "die_x": 12,
             }
         )
@@ -121,9 +131,28 @@ def test_repository_validates_constructed_table_models(repository: DutCrud) -> N
         asset_tag="DUT-001",
         project="demo-project",
         corner="TT",
-        revision="A",
+        die_revision="A",
         die_x=12,
     )
 
     with pytest.raises(ValidationError, match="provided together"):
         repository.add(incomplete)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("die_revision", "1"), ("metal_revision", -1), ("package_revision", "P1")],
+)
+def test_dut_revisions_reject_invalid_formats(field: str, value: object) -> None:
+    """Each revision component follows its manufacturing naming scheme."""
+    data: dict[str, object] = {
+        "id": "dut-1",
+        "asset_tag": "DUT-001",
+        "project": "demo-project",
+        "corner": "TT",
+        "die_revision": "A",
+    }
+    data[field] = value
+
+    with pytest.raises(ValidationError):
+        DutModel.model_validate(data)

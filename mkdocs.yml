@@ -69,10 +69,13 @@ nav:
           - Power supplies: api/instruments/power_supply/index.md
           - Thermal test systems: api/instruments/thermal_test_system/index.md
       - Projects: api/projects/index.md
+      - Sweeps: api/sweeps/index.md
       - Temperatures: api/temperatures/index.md
       - Utilities: api/utils/index.md
       - Voltages: api/voltages/index.md
-  - Development: development/index.md
+  - Development:
+      - Overview: development/index.md
+      - Changelog: changelog.md
 
 plugins:
   - search:

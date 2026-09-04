@@ -24,6 +24,7 @@ from elims_instruments.database import (
     InstrumentType,
     ProjectCrud,
     ProjectModel,
+    ProjectRevisionSpecifications,
     USBConnection,
     VisaConnection,
 )
@@ -36,9 +37,25 @@ from elims_instruments.instruments import (
 from elims_instruments.instruments.counter.ks53220a import Keysight53220A
 from elims_instruments.instruments.multimeter.ks34401a import Keysight34401A
 from elims_instruments.projects import Project, ProjectFactory
+from elims_instruments.temperatures import TemperatureSpecification
+from elims_instruments.utils import Limits
+from elims_instruments.voltages import VoltageSpecification
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+def revision_specifications() -> list[ProjectRevisionSpecifications]:
+    """Build the operating profile used by the bench fixture."""
+    return [
+        ProjectRevisionSpecifications(
+            die_revision="A",
+            voltage_specifications=(VoltageSpecification("VDD", Limits(typical=1.2)),),
+            temperature_specifications=(
+                TemperatureSpecification("DUT", Limits(typical=25)),
+            ),
+        )
+    ]
 
 
 class ProjectInstrumentName(StrEnum):
@@ -75,6 +92,10 @@ class DemoDut(Dut):
     def get_id(self) -> str:
         """Return the database DUT ID."""
         return self.dut.id
+
+    def reset(self) -> None:
+        """Reset this test DUT."""
+        super().reset()
 
 
 class DemoProject(Project):
@@ -135,11 +156,16 @@ def bench_configuration(tmp_path: Path) -> Path:
             asset_tag="DUT-001",
             project="demo-project",
             corner="TT",
-            revision="A",
+            die_revision="A",
             lot_number="LOT-001",
         )
     )
-    project = ProjectModel(id="project-1", name="demo-project")
+    project = ProjectModel(
+        id="project-1",
+        internal_name="demo-project",
+        datasheet_name="Demo IC",
+        specifications=revision_specifications(),
+    )
     project.supported_duts = [dut]
     project.supported_boards = [board]
     project_repository = ProjectCrud(logging.getLogger(__name__), configuration)

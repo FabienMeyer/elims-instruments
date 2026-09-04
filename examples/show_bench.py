@@ -53,6 +53,10 @@ class ExampleDut(Dut):
         """Return the persistent DUT ID."""
         return self.dut.id
 
+    def reset(self) -> None:
+        """Reset the example DUT."""
+        super().reset()
+
 
 class ExampleProject(Project):
     """Minimal concrete characterization project."""
@@ -111,9 +115,12 @@ def show_bench(bench: Bench) -> None:
     for name, dut_object in bench.duts.items():
         dut = dut_object.dut
         dut_logger.info(
-            "{}: revision {}, corner {} ({})",
+            "{}: die revision {}, metal revision {}, package revision {}, "
+            "corner {} ({})",
             name,
-            dut.revision,
+            dut.die_revision,
+            dut.metal_revision,
+            dut.package_revision,
             dut.corner,
             dut.asset_tag,
         )
@@ -124,9 +131,10 @@ def show_bench(bench: Bench) -> None:
         dut_ids = ", ".join(dut.asset_tag for dut in project.supported_duts)
         board_ids = ", ".join(board.asset_tag for board in project.supported_boards)
         project_logger.info(
-            "{}: {} ({}), DUTs [{}], boards [{}]",
+            "{}: {} [{}] ({}), DUTs [{}], boards [{}]",
             name,
-            project.name,
+            project.datasheet_name,
+            project.internal_name,
             project_object.get_id(),
             dut_ids,
             board_ids,

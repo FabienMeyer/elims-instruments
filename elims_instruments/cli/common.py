@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Protocol, TypeVar
+from pathlib import Path
+from typing import TYPE_CHECKING, Annotated, Protocol, TypeVar
+
+import typer
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -21,6 +24,19 @@ class DisposableRepository(Protocol):
 
 
 RepositoryT = TypeVar("RepositoryT", bound=DisposableRepository)
+
+ConfigurationOption = Annotated[
+    Path,
+    typer.Option(
+        "--config",
+        "-c",
+        help="Bench TOML configuration file.",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+]
 
 
 @contextmanager

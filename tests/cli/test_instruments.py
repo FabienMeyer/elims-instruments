@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import yaml
+from click import unstyle
 from typer.testing import CliRunner
 
 from elims_instruments.cli.instruments import app
@@ -35,7 +36,7 @@ def test_commands_follow_instrument_workflow_order() -> None:
     commands = [
         "add",
         "get",
-        "gets",
+        "list",
         "update",
         "delete",
         "sync",
@@ -79,13 +80,13 @@ def test_cli_crud_lifecycle(configuration: Path) -> None:
     assert fetched.exit_code == 0
     assert json.loads(fetched.stdout)["model"] == "DSOX1204G"
 
-    listed = runner.invoke(app, ["gets", *common])
+    listed = runner.invoke(app, ["list", *common])
     assert listed.exit_code == 0
     assert len(json.loads(listed.stdout)) == 1
 
     updated = runner.invoke(
         app,
-        ["update", "SCOPE-001", "--model", "DSOX1204A", *common],
+        ["update", "scope-1", "--model", "DSOX1204A", *common],
     )
     assert updated.exit_code == 0, updated.output
     assert json.loads(updated.stdout)["model"] == "DSOX1204A"
@@ -122,8 +123,9 @@ def test_add_rejects_incomplete_socket_connection(configuration: Path) -> None:
     )
 
     assert result.exit_code == 2
-    assert "ip-address" in result.output
-    assert "port" in result.output
+    output = unstyle(result.output)
+    assert "ip-address" in output
+    assert "port" in output
 
 
 def test_add_rejects_short_asset_tag(configuration: Path) -> None:
@@ -241,7 +243,7 @@ def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:
     assert synced.exit_code == 0, synced.output
     assert "Created: 1; Updated: 1" in synced.stdout
 
-    listed = runner.invoke(app, ["gets", *common])
+    listed = runner.invoke(app, ["list", *common])
     stored = {item["id"]: item for item in json.loads(listed.stdout)}
     assert stored["scope-1"]["model"] == "new-model"
     assert stored["dmm-1"]["connection"]["kind"] == "visa"

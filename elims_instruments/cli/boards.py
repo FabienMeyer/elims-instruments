@@ -24,7 +24,7 @@ from elims_instruments.database import (
 )
 from elims_instruments.utils.logger import get_cli_logger
 
-from .common import managed_repository
+from .common import ConfigurationOption, managed_repository
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
@@ -33,20 +33,6 @@ app = typer.Typer(
     help="Manage the ELIMS board database.",
     no_args_is_help=True,
 )
-
-
-ConfigurationOption = Annotated[
-    Path,
-    typer.Option(
-        "--config",
-        "-c",
-        help="Bench TOML configuration file.",
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-    ),
-]
 
 
 def _repository(configuration: Path) -> AbstractContextManager[BoardCrud]:
@@ -156,6 +142,7 @@ def add(
     interface: Annotated[int | None, typer.Option()] = None,
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
+    """Add a board."""
     link = _connection(
         connection,
         ip_address,
@@ -202,6 +189,7 @@ def get_by_id(
     board_id: Annotated[str, typer.Argument(help="Board ID.")],
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
+    """Get one board by ID."""
     with _repository(configuration) as repository:
         board = repository.fetch("id", board_id)
     if board is None:
@@ -210,10 +198,11 @@ def get_by_id(
     _write_board(board)
 
 
-@app.command("gets")
+@app.command("list")
 def fetch_all(
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
+    """Fetch all boards."""
     with _repository(configuration) as repository:
         boards = repository.fetchall()
     typer.echo(
@@ -222,8 +211,8 @@ def fetch_all(
 
 
 @app.command("update")
-def update_by_asset_tag(
-    asset_tag: Annotated[str, typer.Argument(help="Current board asset tag.")],
+def update_by_id(
+    board_id: Annotated[str, typer.Argument(help="Board ID.")],
     configuration: ConfigurationOption = Path("bench.toml"),
     new_asset_tag: Annotated[str | None, typer.Option("--asset-tag")] = None,
     board_type: Annotated[str | None, typer.Option("--type")] = None,
@@ -245,7 +234,7 @@ def update_by_asset_tag(
     interface: Annotated[int | None, typer.Option()] = None,
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
-    """Update a board selected by its current asset tag."""
+    """Update a board selected by ID."""
     changes: dict[str, object] = {
         field: value
         for field, value in {
@@ -281,7 +270,12 @@ def update_by_asset_tag(
 
     try:
         with _repository(configuration) as repository:
-            board = repository.update_by_asset_tag(asset_tag, changes)
+            stored = repository.fetch("id", board_id)
+            board = (
+                None
+                if stored is None
+                else repository.update_by_asset_tag(stored.asset_tag, changes)
+            )
     except ValidationError as error:
         raise typer.BadParameter(str(error)) from error
     except DuplicateAssetTagError as error:
@@ -291,7 +285,7 @@ def update_by_asset_tag(
         typer.echo("Board asset tag already exists", err=True)
         raise typer.Exit(code=1) from error
     if board is None:
-        typer.echo(f"Board asset tag not found: {asset_tag}", err=True)
+        typer.echo(f"Board not found: {board_id}", err=True)
         raise typer.Exit(code=1)
     _write_board(board)
 
@@ -301,6 +295,7 @@ def delete_by_id(
     board_id: Annotated[str, typer.Argument(help="Board ID.")],
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
+    """Add or fully update every board in a YAML list by ID."""
     with _repository(configuration) as repository:
         removed = repository.remove("id", board_id)
     if not removed:
@@ -323,6 +318,7 @@ def sync_yaml(
     ],
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
+    """Export all boards to a YAML list."""
     try:
         raw_data: object = yaml.safe_load(source.read_text(encoding="utf-8"))
         boards = parse_board_list(raw_data)
@@ -336,7 +332,7 @@ def sync_yaml(
 
 @app.command("export")
 def export_yaml(
-    output: Annotated[Path, typer.Argument(help="Destination YAML file")],
+    output: Annotated[Path, typer.Argument(help="Destination YAML file.")],
     configuration: ConfigurationOption = Path("bench.toml"),
     force: Annotated[
         bool,

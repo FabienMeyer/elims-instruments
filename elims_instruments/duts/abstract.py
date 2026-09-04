@@ -24,3 +24,8 @@ class Dut(ABC):
     def get_id(self) -> str:
         """Return the DUT identification."""
         pass
+
+    @abstractmethod
+    def reset(self) -> None:
+        """Reset the DUT to a known state."""
+        logger.debug("Resetting DUT asset {}", self.dut.asset_tag)
