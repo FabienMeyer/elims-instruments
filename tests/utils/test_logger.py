@@ -1,9 +1,21 @@
 from pathlib import Path
 
-from elims_instruments.utils.logger import LoggerHelper
+from elims_instruments.utils.logger import (
+    CLI_LOGGER_HELPER,
+    LoggerHelper,
+    get_cli_logger,
+    get_logger,
+)
 
 
 class TestLoggerHelper:
+    def test_get_logger_reuses_bound_logger(self) -> None:
+        assert get_logger("bench") is get_logger("bench")
+
+    def test_cli_logger_is_shared_and_rotates_at_ten_megabytes(self) -> None:
+        assert get_cli_logger() is get_cli_logger()
+        assert CLI_LOGGER_HELPER.rotation == "10 MB"
+
     def test_file_format(self, tmp_path: Path) -> None:
         helper = LoggerHelper(
             name="app",

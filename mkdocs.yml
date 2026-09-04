@@ -1,76 +1,146 @@
-site_name: mypackage
-site_url: https://yourorg.github.io/mypackage
-site_description: A short description of your package.
-site_author: Your Name
-repo_url: https://github.com/yourorg/mypackage
-repo_name: yourorg/mypackage
+site_name: ELIMS Instruments
+site_description: Laboratory instrument drivers, asset storage, and bench configuration.
+site_url: https://fabienmeyer.github.io/elims-instruments/
+repo_name: FabienMeyer/elims-instruments
+repo_url: https://github.com/FabienMeyer/elims-instruments
 edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 ELIMS Instruments contributors
+
+strict: true
 
 theme:
   name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: indigo
-      accent: indigo
+      accent: cyan
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: indigo
-      accent: indigo
+      accent: cyan
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - search.suggest
-    - search.highlight
+    - content.action.edit
+    - content.action.view
     - content.code.copy
-    - content.code.annotate
+    - content.code.select
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - User guide:
+      - Overview: guide/index.md
+      - Getting started: guide/getting-started.md
+      - Bench configuration: guide/bench-configuration.md
+      - Command-line interface: guide/cli.md
+      - Extending drivers: guide/extending-drivers.md
+  - Architecture: architecture/index.md
+  - API reference:
+      - Overview: api/index.md
+      - Bench: api/bench/index.md
+      - Boards: api/boards/index.md
+      - CLI: api/cli/index.md
+      - Database: api/database/index.md
+      - DUTs: api/duts/index.md
+      - Instruments:
+          - Overview: api/instruments/index.md
+          - Counters: api/instruments/counter/index.md
+          - Multimeters: api/instruments/multimeter/index.md
+          - Power supplies: api/instruments/power_supply/index.md
+          - Thermal test systems: api/instruments/thermal_test_system/index.md
+      - Projects: api/projects/index.md
+      - Temperatures: api/temperatures/index.md
+      - Utilities: api/utils/index.md
+      - Voltages: api/voltages/index.md
+  - Development: development/index.md
 
 plugins:
-  - search
+  - search:
+      lang: en
   - mkdocstrings:
+      default_handler: python
       handlers:
         python:
+          paths:
+            - .
           options:
+            annotations_path: brief
+            docstring_options:
+              ignore_init_summary: true
+            docstring_section_style: list
             docstring_style: google
-            show_source: true
+            filters:
+              - "!^_"
+            heading_level: 2
+            inherited_members: false
+            line_length: 88
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+            show_root_full_path: false
             show_root_heading: true
+            show_signature_annotations: true
+            show_source: true
             show_symbol_type_heading: true
             show_symbol_type_toc: true
-            merge_init_into_class: true
-            show_signature_annotations: true
+            signature_crossrefs: true
 
 markdown_extensions:
+  - abbr
   - admonition
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.tabbed:
-      alternate_style: true
   - attr_list
+  - def_list
+  - footnotes
   - md_in_html
   - tables
   - toc:
       permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
 
-nav:
-  - Home: index.md
-  - Getting Started: getting-started.md
-  - Architecture: architecture.md
-  - CLI: cli.md
-  - Database:
-      - Overview: database/index.md
-      - Connections: database/connections.md
-      - Instruments: database/instruments.md
-      - Boards: database/boards.md
-  - Changelog: changelog.md
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/FabienMeyer/elims-instruments
+      name: ELIMS Instruments on GitHub

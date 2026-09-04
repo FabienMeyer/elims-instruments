@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 @pytest.fixture
 def configuration(tmp_path: Path) -> Path:
     """Create an isolated CLI database configuration."""
-    path = tmp_path / "database.toml"
+    path = tmp_path / "bench.toml"
     database = (tmp_path / "instruments.db").as_posix()
     path.write_text(
         f'[database]\nurl = "sqlite:///{database}"\necho = false\n',
@@ -55,6 +55,8 @@ def test_cli_crud_lifecycle(configuration: Path) -> None:
         [
             "add",
             "scope-1",
+            "--asset-tag",
+            "SCOPE-001",
             "--type",
             "oscilloscope",
             "--maker",
@@ -83,7 +85,7 @@ def test_cli_crud_lifecycle(configuration: Path) -> None:
 
     updated = runner.invoke(
         app,
-        ["update", "scope-1", "--model", "DSOX1204A", *common],
+        ["update", "SCOPE-001", "--model", "DSOX1204A", *common],
     )
     assert updated.exit_code == 0, updated.output
     assert json.loads(updated.stdout)["model"] == "DSOX1204A"
@@ -104,6 +106,8 @@ def test_add_rejects_incomplete_socket_connection(configuration: Path) -> None:
         [
             "add",
             "scope-1",
+            "--asset-tag",
+            "SCOPE-001",
             "--type",
             "oscilloscope",
             "--maker",
@@ -122,6 +126,64 @@ def test_add_rejects_incomplete_socket_connection(configuration: Path) -> None:
     assert "port" in result.output
 
 
+def test_add_rejects_short_asset_tag(configuration: Path) -> None:
+    """The CLI rejects asset tags shorter than five characters."""
+    result = CliRunner().invoke(
+        app,
+        [
+            "add",
+            "scope-1",
+            "--asset-tag",
+            "1234",
+            "--type",
+            "oscilloscope",
+            "--maker",
+            "Keysight",
+            "--model",
+            "DSOX1204G",
+            "--connection",
+            "socket",
+            "--ip-address",
+            "192.168.1.10",
+            "--port",
+            "5025",
+            "--config",
+            str(configuration),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "string_too_short" in result.output
+
+
+def test_add_rejects_duplicate_asset_tag(configuration: Path) -> None:
+    """The CLI reports a duplicate laboratory asset tag clearly."""
+    runner = CliRunner()
+    common_options = [
+        "--asset-tag",
+        "DMM-001",
+        "--type",
+        "multimeter",
+        "--maker",
+        "Keysight",
+        "--model",
+        "34461A",
+        "--connection",
+        "visa",
+        "--resource-name",
+        "GPIB0::1::INSTR",
+        "--config",
+        str(configuration),
+    ]
+
+    first = runner.invoke(app, ["add", "dmm-1", *common_options])
+    duplicate = runner.invoke(app, ["add", "dmm-2", *common_options])
+
+    assert first.exit_code == 0, first.output
+    assert duplicate.exit_code == 1
+    assert "Asset tag already exists: DMM-001" in duplicate.output
+
+
 def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:
     """A YAML export can update existing IDs and add missing IDs."""
     runner = CliRunner()
@@ -131,6 +193,8 @@ def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:
         [
             "add",
             "scope-1",
+            "--asset-tag",
+            "SCOPE-001",
             "--type",
             "oscilloscope",
             "--maker",
@@ -157,6 +221,7 @@ def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:
     records.append(
         {
             "id": "dmm-1",
+            "asset_tag": "DMM-001",
             "type": "multimeter",
             "maker": "Keysight",
             "model": "34461A",

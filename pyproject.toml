@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 # ---------------------------------------------------------------------------
 [project]
 name = "elims-instruments"
-version = "0.1.0"
+version = "0.0.1"
 description = "Communication drivers and bench configuration for ELIMS instruments."
 readme = "README.md"
 license = { text = "MIT" }
@@ -25,7 +25,9 @@ classifiers = [
 ]
 
 dependencies = [
+  "alembic>=1.18",
   "loguru>=0.7.3",
+  "numpy>=2.4.6",
   "pydantic>=2",
   "pyvisa>=1.14",
   "pyyaml>=6.0.3",
@@ -38,7 +40,6 @@ dependencies = [
 
 [project.scripts]
 elims = "elims_instruments.cli:app"
-instruments = "elims_instruments.cli.instruments:app"
 
 [dependency-groups]
 dev = [
@@ -47,9 +48,9 @@ dev = [
   "pytest-cov>=5.0",
   "pytest-mock>=3.14",
   "ruff>=0.4",
-  "mkdocs>=1.6",
-  "mkdocs-material>=9.5",
-  "mkdocstrings[python]>=0.25",
+  "mkdocs>=1.6,<2",
+  "mkdocs-material>=9.5,<10",
+  "mkdocstrings[python]>=0.25,<1",
   "types-pyyaml>=6.0.12.20260724",
 ]
 
@@ -82,11 +83,6 @@ select = [
   "PTH",      # flake8-use-pathlib
   "RUF",      # ruff-specific rules
 ]
-ignore = [
-  "ANN101",  # missing type for `self`
-  "ANN102",  # missing type for `cls`
-]
-
 [tool.ruff.lint.isort]
 known-first-party = ["elims_instruments"]
 

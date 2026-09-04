@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import TypeAdapter
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON
 from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, SQLModel
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import Dialect
 
@@ -95,21 +94,31 @@ class ConnectionType(TypeDecorator[Connection]):
     impl = JSON
     cache_ok = True
 
-    def process_bind_param(self, value: Connection | None, dialect: 'Dialect'):
+    def process_bind_param(
+        self,
+        value: Connection | None,
+        dialect: Dialect,
+    ) -> dict[str, Any] | None:
+        """Convert a connection model to JSON-compatible data."""
         del dialect
         return None if value is None else value.model_dump(mode="json")
 
-    def process_result_value(self, value: dict[str, Any] | None, dialect: 'Dialect'):
+    def process_result_value(
+        self,
+        value: dict[str, Any] | None,
+        dialect: Dialect,
+    ) -> Connection | None:
+        """Validate JSON data read from the database."""
         del dialect
         return None if value is None else _CONNECTION_ADAPTER.validate_python(value)
 
 
 __all__ = [
-    "SocketConnection",
-    "VisaConnection",
     "ComConnection",
-    "USBConnection",
     "Connection",
     "ConnectionKind",
     "ConnectionType",
+    "SocketConnection",
+    "USBConnection",
+    "VisaConnection",
 ]

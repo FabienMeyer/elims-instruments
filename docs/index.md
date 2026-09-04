@@ -1,5 +1,11 @@
 # ELIMS Instruments
 
-Project documentation index.
+Python tools for laboratory assets, drivers, and bench configuration.
 
-See the architecture and API reference for details.
+## Documentation
+
+- [Get started](guide/getting-started.md)
+- [Read the user guide](guide/index.md)
+- [Understand the architecture](architecture/index.md)
+- [Browse the API](api/index.md)
+- [Contribute](development/index.md)
