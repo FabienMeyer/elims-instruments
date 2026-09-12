@@ -51,28 +51,33 @@ nav:
   - User guide:
       - Overview: guide/index.md
       - Getting started: guide/getting-started.md
+      - Examples: guide/examples.md
       - Bench configuration: guide/bench-configuration.md
       - Command-line interface: guide/cli.md
       - Extending drivers: guide/extending-drivers.md
   - Architecture: architecture/index.md
   - API reference:
       - Overview: api/index.md
-      - Bench: api/bench/index.md
-      - Boards: api/boards/index.md
+      - Bench:
+          - Overview: api/bench/index.md
+          - Boards: api/bench/boards/index.md
+          - DUTs: api/bench/duts/index.md
+          - Projects: api/bench/projects/index.md
+      - Characterization:
+          - Overview: api/characterization/index.md
+          - Reports: api/characterization/reports/index.md
+          - Sweeps: api/characterization/sweeps/index.md
+          - Temperatures: api/characterization/temperatures/index.md
+          - Voltages: api/characterization/voltages/index.md
       - CLI: api/cli/index.md
       - Database: api/database/index.md
-      - DUTs: api/duts/index.md
       - Instruments:
           - Overview: api/instruments/index.md
           - Counters: api/instruments/counter/index.md
           - Multimeters: api/instruments/multimeter/index.md
           - Power supplies: api/instruments/power_supply/index.md
           - Thermal test systems: api/instruments/thermal_test_system/index.md
-      - Projects: api/projects/index.md
-      - Sweeps: api/sweeps/index.md
-      - Temperatures: api/temperatures/index.md
       - Utilities: api/utils/index.md
-      - Voltages: api/voltages/index.md
   - Development:
       - Overview: development/index.md
       - Changelog: changelog.md

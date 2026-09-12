@@ -11,9 +11,9 @@ from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, Relationship, Session, SQLModel
 
-from elims_instruments.temperatures import TemperatureSpecification
+from elims_instruments.characterization.temperatures import TemperatureSpecification
+from elims_instruments.characterization.voltages import VoltageSpecification
 from elims_instruments.utils import Limits
-from elims_instruments.voltages import VoltageSpecification
 
 from .board import BoardModel
 from .crud import Crud, DebugLogger

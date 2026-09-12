@@ -28,13 +28,15 @@ The example directory contains a bench configuration, a seeded SQLite database,
 and minimal concrete DUT and project implementations.
 
 ```powershell
-uv run python examples/seed_database.py
-uv run python examples/show_bench.py
-uv run python examples/characterize_ic.py
+uv run python -m examples.bench_setup.bench
+uv run python -m examples.characterization.outer_sweep
+uv run python -m examples.characterization.inner_sweep
+uv run python -m examples.characterization.report
 ```
 
-`show_bench.py` resolves and displays two instruments, one board, one DUT, and
-one project with its supported resource relationships.
+`bench.py` resolves and displays two instruments, one board, one DUT, and one
+project. The sweep and report examples then reuse the simpler definitions.
+See the [examples guide](examples.md) for the complete order.
 
 ## Create a fresh database
 

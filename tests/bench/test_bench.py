@@ -13,6 +13,14 @@ import elims_instruments.bench.bench as bench_module
 from elims_instruments.bench import (
     Bench,
     BenchConfigurationError,
+    Dut,
+    DutFactory,
+    Project,
+    ProjectFactory,
+)
+from elims_instruments.characterization import (
+    TemperatureSpecification,
+    VoltageSpecification,
 )
 from elims_instruments.database import (
     BoardCrud,
@@ -28,7 +36,6 @@ from elims_instruments.database import (
     USBConnection,
     VisaConnection,
 )
-from elims_instruments.duts import Dut, DutFactory
 from elims_instruments.instruments import (
     InstrumentAssetNotFoundError,
     InstrumentFactory,
@@ -36,10 +43,7 @@ from elims_instruments.instruments import (
 )
 from elims_instruments.instruments.counter.ks53220a import Keysight53220A
 from elims_instruments.instruments.multimeter.ks34401a import Keysight34401A
-from elims_instruments.projects import Project, ProjectFactory
-from elims_instruments.temperatures import TemperatureSpecification
 from elims_instruments.utils import Limits
-from elims_instruments.voltages import VoltageSpecification
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -24,6 +24,19 @@ class Instrument(ABC):
             instrument.asset_tag,
         )
 
+    def report_header(self) -> list[str]:
+        """Return the CSV headers for the instrument information."""
+        return ["asset_tag", "calibration_date"]
+
+    def report_value(self) -> list[str]:
+        """Return the instrument information as CSV values."""
+        return [
+            self.instrument.asset_tag,
+            ""
+            if self.instrument.calibration_date is None
+            else self.instrument.calibration_date.isoformat(),
+        ]
+
     @abstractmethod
     def connect(self) -> None:
         """Open connection to instrument."""

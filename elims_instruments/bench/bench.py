@@ -9,14 +9,14 @@ from enum import StrEnum
 from pathlib import Path
 from tomllib import TOMLDecodeError, load
 
+from elims_instruments.bench.boards import BoardCollection, create_boards
+from elims_instruments.bench.duts import DutCollection, create_duts
 from elims_instruments.bench.error import BenchConfigurationError
-from elims_instruments.boards import BoardCollection, create_boards
-from elims_instruments.duts import DutCollection, create_duts
+from elims_instruments.bench.projects import ProjectCollection, create_projects
 from elims_instruments.instruments.factory import (
     InstrumentCollection,
     create_instruments,
 )
-from elims_instruments.projects import ProjectCollection, create_projects
 from elims_instruments.utils.logger import get_logger
 
 AuthorizedNames = Collection[str] | type[StrEnum]
