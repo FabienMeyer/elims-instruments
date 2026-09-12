@@ -8,6 +8,7 @@ from pathlib import Path
 from elims_instruments.database import (
     BoardCrud,
     BoardModel,
+    CalibrationStatus,
     DutCrud,
     DutModel,
     InstrumentCrud,
@@ -18,12 +19,15 @@ from elims_instruments.database import (
     ProjectRevisionSpecifications,
     USBConnection,
     VisaConnection,
+    parse_project_specifications,
 )
 from elims_instruments.temperatures import TemperatureSpecification
 from elims_instruments.utils import Limits
 from elims_instruments.voltages import VoltageSpecification
 
 CONFIGURATION = Path(__file__).with_name("bench.toml")
+
+PROJECT_SPECIFICATIONS = EXAMPLE_CONFIGURATION.with_name("project-specifications.yaml")
 
 
 def main() -> None:
@@ -88,7 +92,7 @@ def main() -> None:
     )
     duts = DutCrud(logger, CONFIGURATION)
     try:
-        duts.upsert_many([dut])
+        duts.upsert_many([dut, revised_dut])
     finally:
         duts.engine.dispose()
 

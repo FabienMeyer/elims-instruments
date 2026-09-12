@@ -13,4 +13,4 @@ characterization_board = "BRD-001"
 characterized_ic = "DUT-001"
 
 [projects]
-characterization = "demo-project"
+characterization = "example-project"
