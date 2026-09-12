@@ -11,6 +11,7 @@ import yaml
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError, StatementError
 
+from elims_instruments.characterization import ProjectRevisionSpecifications
 from elims_instruments.database import (
     BoardCrud,
     BoardModel,
@@ -18,7 +19,6 @@ from elims_instruments.database import (
     DutModel,
     ProjectCrud,
     ProjectModel,
-    ProjectRevisionSpecifications,
     parse_project_list,
     parse_project_specifications,
 )

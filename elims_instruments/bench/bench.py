@@ -9,14 +9,14 @@ from enum import StrEnum
 from pathlib import Path
 from tomllib import TOMLDecodeError, load
 
+from elims_instruments.bench.boards import BoardCollection, create_boards
+from elims_instruments.bench.duts import DutCollection, create_duts
 from elims_instruments.bench.error import BenchConfigurationError
-from elims_instruments.boards import BoardCollection, create_boards
-from elims_instruments.duts import DutCollection, create_duts
-from elims_instruments.instruments.factory import (
+from elims_instruments.bench.instruments.factory import (
     InstrumentCollection,
     create_instruments,
 )
-from elims_instruments.projects import ProjectCollection, create_projects
+from elims_instruments.bench.projects import ProjectCollection, create_projects
 from elims_instruments.utils.logger import get_logger
 
 AuthorizedNames = Collection[str] | type[StrEnum]
@@ -185,3 +185,25 @@ class Bench:
             len(self.duts),
             len(self.projects),
         )
+
+    def report_header(self) -> list[str]:
+        """Return headers for the configured bench assets."""
+        headers: list[str] = []
+        for instrument in self.instruments.values():
+            headers.extend(instrument.report_header())
+        for board in self.boards.values():
+            headers.extend(board.report_header())
+        for dut in self.duts.values():
+            headers.extend(dut.report_header())
+        return headers
+
+    def report_value(self) -> list[str]:
+        """Return configured bench asset values in header order."""
+        values: list[str] = []
+        for instrument in self.instruments.values():
+            values.extend(instrument.report_value())
+        for board in self.boards.values():
+            values.extend(board.report_value())
+        for dut in self.duts.values():
+            values.extend(dut.report_value())
+        return values

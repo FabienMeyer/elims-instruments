@@ -2,4 +2,4 @@
 
 Multimeter interfaces, factories, and drivers.
 
-::: elims_instruments.instruments.multimeter
+::: elims_instruments.bench.instruments.multimeter

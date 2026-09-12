@@ -2,4 +2,4 @@
 
 Power-supply interfaces, factories, and drivers.
 
-::: elims_instruments.instruments.power_supply
+::: elims_instruments.bench.instruments.power_supply

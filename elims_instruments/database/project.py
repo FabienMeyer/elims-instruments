@@ -11,49 +11,15 @@ from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, Relationship, Session, SQLModel
 
-from elims_instruments.temperatures import TemperatureSpecification
-from elims_instruments.utils import Limits
-from elims_instruments.voltages import VoltageSpecification
+from elims_instruments.characterization import ProjectRevisionSpecifications
 
 from .board import BoardModel
 from .crud import Crud, DebugLogger
-from .dut import DieRevision, DutModel, PackageRevision
+from .dut import DutModel
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
-class ProjectRevisionSpecifications(SQLModel):
-    """Electrical and thermal specifications for one exact DUT revision."""
-
-    die_revision: DieRevision
-    metal_revision: int | None = Field(default=None, ge=0)
-    package_revision: PackageRevision | None = None
-    voltage_specifications: tuple[VoltageSpecification, ...]
-    temperature_specifications: tuple[TemperatureSpecification, ...]
-
-    @model_validator(mode="after")
-    def validate_specifications(self) -> Self:
-        """Require named voltage and temperature specifications without duplicates."""
-        for kind, specifications in (
-            ("voltage", self.voltage_specifications),
-            ("temperature", self.temperature_specifications),
-        ):
-            if not specifications:
-                raise ValueError(f"At least one {kind} specification is required")
-            names = [
-                specification.name.strip().casefold()
-                for specification in specifications
-            ]
-            if any(not name for name in names):
-                raise ValueError(
-                    f"{kind.capitalize()} specification names cannot be empty"
-                )
-            if len(names) != len(set(names)):
-                raise ValueError(f"Duplicate {kind} specification names")
-        return self
-
-
-ProjectRevisionSpecifications.model_rebuild(_types_namespace={"Limits": Limits})
 _PROJECT_SPECIFICATIONS_ADAPTER: TypeAdapter[list[ProjectRevisionSpecifications]] = (
     TypeAdapter(list[ProjectRevisionSpecifications])
 )

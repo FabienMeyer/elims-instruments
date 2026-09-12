@@ -1,5 +1,30 @@
 # Architecture
 
+## Package boundaries
+
+The public API is grouped by responsibility:
+
+```text
+elims_instruments/
+├── bench/              # Bench, boards, DUTs, and projects
+├── characterization/   # Conditions, sweeps, and reports
+├── database/           # Persistent asset and project models
+├── instruments/        # Instrument drivers and factories
+├── cli/                # Command-line interface
+└── utils/              # Shared utilities
+```
+
+The `bench` and `characterization` package roots are public facades. Most code
+can therefore import domain objects without depending on their internal module
+layout:
+
+```python
+from elims_instruments.bench import Bench, Board, Dut, Project
+from elims_instruments.characterization import OuterMatrix, Temperature, Voltages
+```
+
+## Data model
+
 The database stores physical assets. Instruments and boards can be reused by
 many projects; each DUT stores its owning project.
 

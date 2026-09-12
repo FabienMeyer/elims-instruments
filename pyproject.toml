@@ -28,6 +28,7 @@ dependencies = [
   "alembic>=1.18",
   "loguru>=0.7.3",
   "numpy>=2.4.6",
+  "polars>=1.0",
   "pydantic>=2",
   "pyvisa>=1.14",
   "pyyaml>=6.0.3",

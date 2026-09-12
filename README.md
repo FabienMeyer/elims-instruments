@@ -128,11 +128,14 @@ The `examples` directory contains a ready-to-use `bench.toml` and SQLite
 database:
 
 ```powershell
-uv run python examples/show_bench.py
-uv run python examples/characterize_ic.py
+uv run python -m examples.bench_setup.bench
+uv run python -m examples.characterization.outer_sweep
+uv run python -m examples.characterization.inner_sweep
+uv run python -m examples.characterization.report
 ```
 
-See [examples/README.md](examples/README.md) for database seeding.
+See the [examples guide](docs/guide/examples.md) for the recommended order and
+database seeding.
 
 ## Documentation
 
@@ -156,7 +159,7 @@ contributor guidance live under [docs](docs/index.md).
 Asset storage, bench loading, and CLI management are implemented. The current
 Keysight classes identify supported models, but hardware operations still raise
 `NotImplementedError` until their communication commands are implemented.
-Import driver factories from `elims_instruments.instruments`.
+Import driver factories from `elims_instruments.bench.instruments`.
 
 Library logging is silent until configured. CLI commands enable warning-level
 terminal logging and rotating debug files automatically.

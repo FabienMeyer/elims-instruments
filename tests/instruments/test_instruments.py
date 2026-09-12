@@ -4,21 +4,21 @@ from pathlib import Path
 
 import pytest
 
+from elims_instruments.bench.instruments import InstrumentFactory, create_instruments
+from elims_instruments.bench.instruments.counter.factory import CounterFactory
+from elims_instruments.bench.instruments.counter.ks53220a import Keysight53220A
+from elims_instruments.bench.instruments.multimeter.factory import MultimeterFactory
+from elims_instruments.bench.instruments.multimeter.ks34401a import Keysight34401A
+from elims_instruments.bench.instruments.power_supply.factory import PowerSupplyFactory
+from elims_instruments.bench.instruments.power_supply.ks36313a import KeysightE36313A
+from elims_instruments.bench.instruments.thermal_test_system import (
+    ThermalTestSystem,
+    ThermalTestSystemFactory,
+)
 from elims_instruments.database import (
     InstrumentModel,
     InstrumentType,
     VisaConnection,
-)
-from elims_instruments.instruments import InstrumentFactory, create_instruments
-from elims_instruments.instruments.counter.factory import CounterFactory
-from elims_instruments.instruments.counter.ks53220a import Keysight53220A
-from elims_instruments.instruments.multimeter.factory import MultimeterFactory
-from elims_instruments.instruments.multimeter.ks34401a import Keysight34401A
-from elims_instruments.instruments.power_supply.factory import PowerSupplyFactory
-from elims_instruments.instruments.power_supply.ks36313a import KeysightE36313A
-from elims_instruments.instruments.thermal_test_system import (
-    ThermalTestSystem,
-    ThermalTestSystemFactory,
 )
 
 
