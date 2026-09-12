@@ -2,4 +2,4 @@
 
 Thermal-system interfaces and factories.
 
-::: elims_instruments.instruments.thermal_test_system
+::: elims_instruments.bench.instruments.thermal_test_system

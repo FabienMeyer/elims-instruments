@@ -10,6 +10,10 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy import text
 
+from elims_instruments.characterization import (
+    TemperatureSpecification,
+    VoltageSpecification,
+)
 from elims_instruments.database import (
     BoardCrud,
     BoardModel,
@@ -21,9 +25,7 @@ from elims_instruments.database import (
     USBConnection,
     parse_project_list,
 )
-from elims_instruments.temperatures import TemperatureSpecification
 from elims_instruments.utils import Limits
-from elims_instruments.voltages import VoltageSpecification
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -135,7 +137,7 @@ def test_project_relationships_round_trip(
     assert [item.id for item in stored.supported_boards] == ["board-1"]
     assert all(isinstance(dut, DutModel) for dut in stored.supported_duts)
     assert isinstance(stored.supported_boards[0], BoardModel)
-    assert stored.specifications[0].voltage_specifications[0].name == "VDD"
+    assert stored.specifications[0].voltage_specifications[0].name == "vdd"
     assert stored.specifications[0].temperature_specifications[0].name == "DUT"
 
 

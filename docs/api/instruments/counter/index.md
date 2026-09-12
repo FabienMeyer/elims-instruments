@@ -2,4 +2,4 @@
 
 Counter interfaces, factories, and drivers.
 
-::: elims_instruments.instruments.counter
+::: elims_instruments.bench.instruments.counter

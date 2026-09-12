@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated, Self
 
-from pydantic import BeforeValidator, StringConstraints, TypeAdapter, model_validator
+from pydantic import StringConstraints, TypeAdapter, model_validator
 from sqlmodel import Field, SQLModel
+
+from elims_instruments.characterization.revisions import (  # noqa: TC001
+    DieRevision,
+    PackageRevision,
+)
 
 from .crud import Crud, DebugLogger
 
@@ -15,24 +20,6 @@ if TYPE_CHECKING:
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 AssetTag = Annotated[str, StringConstraints(strip_whitespace=True, min_length=5)]
-
-
-def _normalize_revision(value: object) -> object:
-    """Normalize string revision values before pattern validation."""
-    return value.strip().upper() if isinstance(value, str) else value
-
-
-DieRevision = Annotated[
-    str,
-    BeforeValidator(_normalize_revision),
-    StringConstraints(pattern=r"^[A-Z]+$"),
-]
-PackageRevision = Annotated[
-    str,
-    BeforeValidator(_normalize_revision),
-    StringConstraints(pattern=r"^R[1-9]\d*$"),
-]
-
 
 class DutModel(SQLModel, table=True):
     """An IC DUT record and its manufacturing traceability."""
