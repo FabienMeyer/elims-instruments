@@ -45,12 +45,7 @@ def main() -> None:
 
     for board in boards:
         driver = BoardFactory.create(board)
-        logger.info(
-            f"{driver.get_id()}: {type(driver).__name__} for "
-            f"{driver.board.maker} {driver.board.model} "
-            f"(asset tag: {driver.board.asset_tag}, "
-            f"type: {driver.board.type})"
-        )
+        logger.info(driver.report_value())
 
 
 if __name__ == "__main__":

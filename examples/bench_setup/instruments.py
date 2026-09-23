@@ -23,12 +23,7 @@ def main() -> None:
 
     for instrument in instruments:
         driver = InstrumentFactory.create(instrument)
-        logger.info(
-            f"{instrument.id}: {type(driver).__name__} for "
-            f"{instrument.maker} {instrument.model} "
-            f"(asset tag: {instrument.asset_tag})"
-        )
-
+        logger.info(driver.report_value())
 
 if __name__ == "__main__":
     main()
