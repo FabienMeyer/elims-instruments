@@ -147,7 +147,7 @@ def bench_configuration(tmp_path: Path) -> Path:
         BoardModel(
             id="board-1",
             asset_tag="BRD-001",
-            type="characterization",
+            type="generic",
             maker="ELIMS",
             model="Characterization Board A",
             connection=USBConnection(vendor_id=1, product_id=2),

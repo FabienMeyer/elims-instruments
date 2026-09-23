@@ -46,6 +46,7 @@ def parse_board_list(raw_data: object) -> list[BoardModel]:
 
     Returns:
         Fully validated board table models.
+
     """
     # SQLModel table construction skips Pydantic's required-field validation.
     # Validate each raw mapping explicitly to keep imports strict.

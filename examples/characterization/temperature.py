@@ -43,13 +43,13 @@ def create_ambient_temperature() -> Temperature:
     return Temperature(
         TemperatureSpecification(
             name="AMBIENT",
-            temperature_limits=Limits(minimum=15, typical=25, maximum=35),
+            temperature_limits=Limits(typical=25),
         ),
         temperature_getter=lambda: 23.6,
     )
 
 
-def create_dut_temperature(
+def create_adjustable_temperature(
     chamber: SimulatedThermalChamber | None = None,
 ) -> Temperature:
     """Create the adjustable DUT temperature around a simulated chamber."""
@@ -76,10 +76,10 @@ def main() -> None:
     """Create temperature conditions and exercise their public operations."""
     LOGGER_HELPER.configure()
     ambient = create_ambient_temperature()
-    dut_temperature = create_dut_temperature()
+    adjustable_temperature = create_adjustable_temperature()
 
-    dut_temperature.enable()
-    dut_temperature.set_temperature(85)
+    adjustable_temperature.enable()
+    adjustable_temperature.set_temperature(85)
 
     logger.info(
         "{}: adjustable={}, measured={:.1f} °C",
@@ -89,21 +89,21 @@ def main() -> None:
     )
     logger.info(
         "{}: setpoint={:.1f} °C, measured={:.1f} °C",
-        dut_temperature.name,
-        dut_temperature.setpoint,
-        dut_temperature.get_temperature(),
+        adjustable_temperature.name,
+        adjustable_temperature.setpoint,
+        adjustable_temperature.get_temperature(),
     )
     logger.info(
         "Report: {}",
         dict(
             zip(
-                dut_temperature.report_header(),
-                dut_temperature.report_value(),
+                adjustable_temperature.report_header(),
+                adjustable_temperature.report_value(),
                 strict=True,
             )
         ),
     )
-    dut_temperature.disable()
+    adjustable_temperature.disable()
 
 
 if __name__ == "__main__":

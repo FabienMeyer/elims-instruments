@@ -2,25 +2,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from elims_instruments.characterization import OuterMatrix
 from elims_instruments.utils.logger import LOGGER_HELPER, LoggerHelper, get_logger
-from examples.characterization.temperature import create_dut_temperature
+from examples.characterization.temperature import create_adjustable_temperature
 from examples.characterization.voltages import SupplySetPoints, create_voltages
-
-if TYPE_CHECKING:
-    from examples.bench_setup.dut import ExampleDut
 
 logger = get_logger(__name__, LoggerHelper.Color.CYAN)
 MAIN_BLOCK = "com"
 
 
-def create_outer_matrix() -> OuterMatrix[ExampleDut]:
+def create_outer_matrix() -> OuterMatrix:
     """Create the simulated matrix shared by later examples."""
     return OuterMatrix(
         test_id=MAIN_BLOCK,
-        temperature=create_dut_temperature(),
+        temperature=create_adjustable_temperature(),
         temperature_setpoints=[-40, 25],
         voltages=create_voltages(),
         voltage_setpoints=[

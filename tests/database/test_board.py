@@ -75,6 +75,16 @@ def test_invalid_connection_is_rejected() -> None:
         SocketConnection(ip_address="not-an-ip", port=0)
 
 
+def test_socket_connection_requires_valid_ipv4_address() -> None:
+    """Socket addresses reject octets outside the IPv4 range."""
+    connection = SocketConnection(ip_address="192.168.1.10", port=5025)
+
+    assert connection.ip_address == "192.168.1.10"
+
+    with pytest.raises(ValidationError, match="Octet 999"):
+        SocketConnection(ip_address="999.999.999.999", port=5025)
+
+
 def test_board_validation_normalizes_identity() -> None:
     """Board identity values are trimmed and cannot contain only whitespace."""
     board = BoardModel.model_validate(

@@ -74,6 +74,25 @@ def test_cli_crud_lifecycle(configuration: Path) -> None:
     assert "Deleted board: board-1" in deleted.stdout
 
 
+@pytest.mark.parametrize(
+    ("command", "description"),
+    [
+        ("delete", "Delete one board by ID."),
+        ("sync", "Add or fully update every board in a YAML list by ID."),
+        ("export", "Export all boards to a YAML list."),
+    ],
+)
+def test_command_help_describes_the_board_operation(
+    command: str,
+    description: str,
+) -> None:
+    """Each board subcommand exposes its matching operation description."""
+    result = CliRunner().invoke(app, [command, "--help"])
+
+    assert result.exit_code == 0
+    assert description in unstyle(result.output)
+
+
 def test_add_rejects_incomplete_socket_connection(configuration: Path) -> None:
     result = CliRunner().invoke(
         app,
@@ -99,6 +118,128 @@ def test_add_rejects_incomplete_socket_connection(configuration: Path) -> None:
     output = unstyle(result.output)
     assert "ip-address" in output
     assert "port" in output
+
+
+def test_usb_and_board_serial_numbers_are_independent(configuration: Path) -> None:
+    """Board identity and the USB descriptor retain distinct serial numbers."""
+    result = CliRunner().invoke(
+        app,
+        [
+            "add",
+            "board-1",
+            "--asset-tag",
+            "BOARD-001",
+            "--type",
+            "controller",
+            "--maker",
+            "Acme",
+            "--model",
+            "CTRL-1",
+            "--serial-number",
+            "BOARD-SN-42",
+            "--connection",
+            "usb",
+            "--vendor-id",
+            "1234",
+            "--product-id",
+            "5678",
+            "--usb-serial-number",
+            "USB-SN-99",
+            "--config",
+            str(configuration),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    board = json.loads(result.stdout)
+    assert board["serial_number"] == "BOARD-SN-42"
+    assert board["connection"]["serial_number"] == "USB-SN-99"
+
+
+def test_update_keeps_usb_and_board_serial_numbers_independent(
+    configuration: Path,
+) -> None:
+    """Clearing board metadata does not clear the replacement USB descriptor."""
+    runner = CliRunner()
+    common = ["--config", str(configuration)]
+    added = runner.invoke(
+        app,
+        [
+            "add",
+            "board-1",
+            "--asset-tag",
+            "BOARD-001",
+            "--type",
+            "controller",
+            "--maker",
+            "Acme",
+            "--model",
+            "CTRL-1",
+            "--serial-number",
+            "BOARD-SN-42",
+            "--connection",
+            "com",
+            "--com-port",
+            "COM3",
+            *common,
+        ],
+    )
+    assert added.exit_code == 0, added.output
+
+    updated = runner.invoke(
+        app,
+        [
+            "update",
+            "board-1",
+            "--clear-serial-number",
+            "--connection",
+            "usb",
+            "--vendor-id",
+            "1234",
+            "--product-id",
+            "5678",
+            "--usb-serial-number",
+            "USB-SN-99",
+            *common,
+        ],
+    )
+
+    assert updated.exit_code == 0, updated.output
+    board = json.loads(updated.stdout)
+    assert board["serial_number"] is None
+    assert board["connection"]["serial_number"] == "USB-SN-99"
+
+
+def test_explicit_invalid_connection_value_is_not_replaced_by_default(
+    configuration: Path,
+) -> None:
+    """An explicitly supplied falsey value reaches model validation."""
+    result = CliRunner().invoke(
+        app,
+        [
+            "add",
+            "board-1",
+            "--asset-tag",
+            "BOARD-001",
+            "--type",
+            "controller",
+            "--maker",
+            "Acme",
+            "--model",
+            "CTRL-1",
+            "--connection",
+            "com",
+            "--com-port",
+            "COM3",
+            "--baud-rate",
+            "0",
+            "--config",
+            str(configuration),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "greater than or equal to 110" in unstyle(result.output)
 
 
 def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:

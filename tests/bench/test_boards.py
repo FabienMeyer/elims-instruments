@@ -11,6 +11,7 @@ from elims_instruments.bench import (
     Board,
     BoardAssetNotFoundError,
     BoardFactory,
+    UnsupportedBoardTypeError,
     create_boards,
 )
 from elims_instruments.database import BoardCrud, BoardModel, USBConnection
@@ -33,7 +34,7 @@ def bench_configuration(tmp_path: Path) -> Path:
         BoardModel(
             id="board-1",
             asset_tag="BRD-001",
-            type="fixture",
+            type="generic",
             maker="ELIMS",
             model="Fixture A",
             connection=USBConnection(vendor_id=1, product_id=2),
@@ -42,10 +43,10 @@ def bench_configuration(tmp_path: Path) -> Path:
     return configuration
 
 
-def test_create_boards_uses_base_driver(
+def test_create_boards_uses_explicit_generic_driver(
     bench_configuration: Path,
 ) -> None:
-    """An unregistered board type uses the base board driver."""
+    """The explicit generic board type uses the base board driver."""
     boards = create_boards(
         {"characterization_board": "BRD-001"},
         bench_configuration,
@@ -82,6 +83,21 @@ def test_factory_rejects_invalid_registration() -> None:
 
     with pytest.raises(TypeError, match="callable"):
         BoardFactory.register("fixture", None)  # type: ignore[arg-type]
+
+
+def test_factory_rejects_unregistered_board_type() -> None:
+    """An unsupported board type cannot silently use the generic driver."""
+    model = BoardModel(
+        id="board-3",
+        asset_tag="BRD-003",
+        type="characterizaton",
+        maker="ELIMS",
+        model="Fixture C",
+        connection=USBConnection(vendor_id=1, product_id=4),
+    )
+
+    with pytest.raises(UnsupportedBoardTypeError, match="characterizaton"):
+        BoardFactory.create(model)
 
 
 def test_create_boards_rejects_missing_asset(

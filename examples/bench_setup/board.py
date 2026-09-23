@@ -23,10 +23,10 @@ class ExampleBoard(Board):
         return self.board.id
 
     def reset(self) -> None:
-        """Reset the board to its known initial state.
+        """Provide the placeholder reset hook for this example board.
 
-        Replace this placeholder with the board-specific reset sequence when
-        the example is connected to hardware.
+        Replace this no-op with the board-specific reset sequence when the
+        example is connected to hardware.
         """
 
 
@@ -45,12 +45,7 @@ def main() -> None:
 
     for board in boards:
         driver = BoardFactory.create(board)
-        logger.info(
-            f"{driver.get_id()}: {type(driver).__name__} for "
-            f"{driver.board.maker} {driver.board.model} "
-            f"(asset tag: {driver.board.asset_tag}, "
-            f"type: {driver.board.type})"
-        )
+        logger.info(driver.report_value())
 
 
 if __name__ == "__main__":

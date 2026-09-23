@@ -14,17 +14,19 @@ from sqlalchemy.exc import IntegrityError
 from elims_instruments.database import (
     BoardCrud,
     BoardModel,
-    ComConnection,
-    Connection,
     ConnectionKind,
     DuplicateAssetTagError,
-    SocketConnection,
-    USBConnection,
     parse_board_list,
 )
 from elims_instruments.utils.logger import get_cli_logger
 
 from .common import ConfigurationOption, managed_repository
+from .connections import (
+    ComConnectionOptions,
+    SocketConnectionOptions,
+    USBConnectionOptions,
+    build_connection,
+)
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
@@ -43,74 +45,8 @@ def _repository(configuration: Path) -> AbstractContextManager[BoardCrud]:
 
 
 def _write_board(board: BoardModel) -> None:
+    """Write one board as formatted JSON."""
     typer.echo(json.dumps(board.model_dump(mode="json"), indent=2))
-
-
-def _connection(
-    kind: ConnectionKind,
-    # socket
-    ip_address: str | None,
-    port: int | None,
-    mac_address: str | None,
-    # com
-    com_port: str | None,
-    baud_rate: int | None,
-    bytesize: int | None,
-    stop_bits: float | None,
-    parity: str | None,
-    # usb
-    vendor_id: int | None,
-    product_id: int | None,
-    serial_number: str | None,
-    interface: int | None,
-    timeout_seconds: float | None,
-) -> Connection:
-    try:
-        if kind is ConnectionKind.SOCKET:
-            if ip_address is None or port is None:
-                raise typer.BadParameter(
-                    "socket connections require --ip-address and --port",
-                    param_hint="--connection",
-                )
-            return SocketConnection(
-                ip_address=ip_address,
-                port=port,
-                mac_address=mac_address,
-                timeout_seconds=timeout_seconds or 5.0,
-            )
-
-        if kind is ConnectionKind.COM:
-            if com_port is None:
-                raise typer.BadParameter(
-                    "com connections require --com-port",
-                    param_hint="--connection",
-                )
-            return ComConnection(
-                port=com_port,
-                baud_rate=baud_rate or 9600,
-                bytesize=bytesize or 8,
-                stop_bits=stop_bits or 1.0,
-                parity=parity or "N",
-                timeout_seconds=timeout_seconds or 5.0,
-            )
-
-        if kind is ConnectionKind.USB:
-            if vendor_id is None or product_id is None:
-                raise typer.BadParameter(
-                    "usb connections require --vendor-id and --product-id",
-                    param_hint="--connection",
-                )
-            return USBConnection(
-                vendor_id=vendor_id,
-                product_id=product_id,
-                serial_number=serial_number,
-                interface=interface,
-                timeout_seconds=timeout_seconds or 10.0,
-            )
-
-        raise typer.BadParameter("unknown connection kind", param_hint="--connection")
-    except ValidationError as error:
-        raise typer.BadParameter(str(error), param_hint="--connection") from error
 
 
 @app.command()
@@ -139,25 +75,34 @@ def add(
     parity: Annotated[str | None, typer.Option()] = None,
     vendor_id: Annotated[int | None, typer.Option()] = None,
     product_id: Annotated[int | None, typer.Option()] = None,
+    usb_serial_number: Annotated[str | None, typer.Option()] = None,
     interface: Annotated[int | None, typer.Option()] = None,
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
     """Add a board."""
-    link = _connection(
+    link = build_connection(
         connection,
-        ip_address,
-        port,
-        mac_address,
-        com_port,
-        baud_rate,
-        bytesize,
-        stop_bits,
-        parity,
-        vendor_id,
-        product_id,
-        serial_number,
-        interface,
-        timeout_seconds,
+        socket=SocketConnectionOptions(
+            ip_address=ip_address,
+            port=port,
+            mac_address=mac_address,
+            timeout_seconds=timeout_seconds,
+        ),
+        com=ComConnectionOptions(
+            port=com_port,
+            baud_rate=baud_rate,
+            bytesize=bytesize,
+            stop_bits=stop_bits,
+            parity=parity,
+            timeout_seconds=timeout_seconds,
+        ),
+        usb=USBConnectionOptions(
+            vendor_id=vendor_id,
+            product_id=product_id,
+            serial_number=usb_serial_number,
+            interface=interface,
+            timeout_seconds=timeout_seconds,
+        ),
     )
     try:
         board = BoardModel.model_validate(
@@ -231,6 +176,7 @@ def update_by_id(
     parity: Annotated[str | None, typer.Option()] = None,
     vendor_id: Annotated[int | None, typer.Option()] = None,
     product_id: Annotated[int | None, typer.Option()] = None,
+    usb_serial_number: Annotated[str | None, typer.Option()] = None,
     interface: Annotated[int | None, typer.Option()] = None,
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
@@ -249,21 +195,29 @@ def update_by_id(
     if clear_serial_number:
         changes["serial_number"] = None
     if connection is not None:
-        changes["connection"] = _connection(
+        changes["connection"] = build_connection(
             connection,
-            ip_address,
-            port,
-            mac_address,
-            com_port,
-            baud_rate,
-            bytesize,
-            stop_bits,
-            parity,
-            vendor_id,
-            product_id,
-            serial_number,
-            interface,
-            timeout_seconds,
+            socket=SocketConnectionOptions(
+                ip_address=ip_address,
+                port=port,
+                mac_address=mac_address,
+                timeout_seconds=timeout_seconds,
+            ),
+            com=ComConnectionOptions(
+                port=com_port,
+                baud_rate=baud_rate,
+                bytesize=bytesize,
+                stop_bits=stop_bits,
+                parity=parity,
+                timeout_seconds=timeout_seconds,
+            ),
+            usb=USBConnectionOptions(
+                vendor_id=vendor_id,
+                product_id=product_id,
+                serial_number=usb_serial_number,
+                interface=interface,
+                timeout_seconds=timeout_seconds,
+            ),
         )
     if not changes:
         raise typer.BadParameter("provide at least one field to update")
@@ -295,7 +249,7 @@ def delete_by_id(
     board_id: Annotated[str, typer.Argument(help="Board ID.")],
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
-    """Add or fully update every board in a YAML list by ID."""
+    """Delete one board by ID."""
     with _repository(configuration) as repository:
         removed = repository.remove("id", board_id)
     if not removed:
@@ -318,7 +272,7 @@ def sync_yaml(
     ],
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
-    """Export all boards to a YAML list."""
+    """Add or fully update every board in a YAML list by ID."""
     try:
         raw_data: object = yaml.safe_load(source.read_text(encoding="utf-8"))
         boards = parse_board_list(raw_data)
@@ -339,6 +293,7 @@ def export_yaml(
         typer.Option("--force", help="Overwrite an existing YAML file."),
     ] = False,
 ) -> None:
+    """Export all boards to a YAML list."""
     if output.exists() and not force:
         typer.echo(f"File already exists: {output}; use --force to overwrite", err=True)
         raise typer.Exit(code=1)

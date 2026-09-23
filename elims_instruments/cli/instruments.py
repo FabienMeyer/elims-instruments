@@ -12,19 +12,21 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from elims_instruments.database import (
-    Connection,
     ConnectionKind,
     DuplicateAssetTagError,
     InstrumentCrud,
     InstrumentModel,
     InstrumentType,
-    SocketConnection,
-    VisaConnection,
     parse_instrument_list,
 )
 from elims_instruments.utils.logger import get_cli_logger
 
 from .common import ConfigurationOption, managed_repository
+from .connections import (
+    SocketConnectionOptions,
+    VisaConnectionOptions,
+    build_connection,
+)
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
@@ -45,42 +47,6 @@ def _repository(configuration: Path) -> AbstractContextManager[InstrumentCrud]:
 def _write_instrument(instrument: InstrumentModel) -> None:
     """Write one instrument as formatted JSON."""
     typer.echo(json.dumps(instrument.model_dump(mode="json"), indent=2))
-
-
-def _connection(
-    kind: ConnectionKind,
-    ip_address: str | None,
-    port: int | None,
-    mac_address: str | None,
-    resource_name: str | None,
-    timeout_seconds: float | None,
-) -> Connection:
-    """Build and validate a connection from command options."""
-    try:
-        if kind is ConnectionKind.SOCKET:
-            if ip_address is None or port is None:
-                raise typer.BadParameter(
-                    "socket connections require --ip-address and --port",
-                    param_hint="--connection",
-                )
-            return SocketConnection(
-                ip_address=ip_address,
-                port=port,
-                mac_address=mac_address,
-                timeout_seconds=timeout_seconds or 5.0,
-            )
-
-        if resource_name is None:
-            raise typer.BadParameter(
-                "VISA connections require --resource-name",
-                param_hint="--connection",
-            )
-        return VisaConnection(
-            resource_name=resource_name,
-            timeout_seconds=timeout_seconds or 30.0,
-        )
-    except ValidationError as error:
-        raise typer.BadParameter(str(error), param_hint="--connection") from error
 
 
 @app.command()
@@ -109,13 +75,18 @@ def add(
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
     """Add an instrument."""
-    link = _connection(
+    link = build_connection(
         connection,
-        ip_address,
-        port,
-        mac_address,
-        resource_name,
-        timeout_seconds,
+        socket=SocketConnectionOptions(
+            ip_address=ip_address,
+            port=port,
+            mac_address=mac_address,
+            timeout_seconds=timeout_seconds,
+        ),
+        visa=VisaConnectionOptions(
+            resource_name=resource_name,
+            timeout_seconds=timeout_seconds,
+        ),
     )
     try:
         instrument = InstrumentModel.model_validate(
@@ -206,13 +177,18 @@ def update_by_id(
     if clear_serial_number:
         changes["serial_number"] = None
     if connection is not None:
-        changes["connection"] = _connection(
+        changes["connection"] = build_connection(
             connection,
-            ip_address,
-            port,
-            mac_address,
-            resource_name,
-            timeout_seconds,
+            socket=SocketConnectionOptions(
+                ip_address=ip_address,
+                port=port,
+                mac_address=mac_address,
+                timeout_seconds=timeout_seconds,
+            ),
+            visa=VisaConnectionOptions(
+                resource_name=resource_name,
+                timeout_seconds=timeout_seconds,
+            ),
         )
     if not changes:
         raise typer.BadParameter("provide at least one field to update")

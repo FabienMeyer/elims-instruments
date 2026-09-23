@@ -24,7 +24,7 @@ class Board:
         )
 
     def report_header(self) -> list[str]:
-        """Return the CSV headers for the instrument information."""
+        """Return the CSV headers for the board information."""
         return ["asset_tag"]
 
     def report_value(self) -> list[str]:

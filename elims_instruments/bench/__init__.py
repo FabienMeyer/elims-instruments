@@ -6,6 +6,7 @@ from .boards import (
     BoardAssetNotFoundError,
     BoardCollection,
     BoardFactory,
+    UnsupportedBoardTypeError,
     create_boards,
 )
 from .duts import (
@@ -47,6 +48,7 @@ __all__ = [
     "ProjectCollection",
     "ProjectFactory",
     "ProjectNotFoundError",
+    "UnsupportedBoardTypeError",
     "UnsupportedInstrumentTypeError",
     "create_boards",
     "create_duts",

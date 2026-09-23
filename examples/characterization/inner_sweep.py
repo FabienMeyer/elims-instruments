@@ -6,9 +6,10 @@ from dataclasses import dataclass
 from itertools import product
 from typing import TYPE_CHECKING
 
+from elims_instruments.bench import DutFactory
 from elims_instruments.characterization import InnerMatrix, InnerSweep
 from elims_instruments.utils.logger import LOGGER_HELPER, LoggerHelper, get_logger
-from examples.bench_setup.dut import ExampleDut, create_example_dut
+from examples.bench_setup.dut import ExampleDut, get_duts
 from examples.characterization.outer_sweep import MAIN_BLOCK, create_outer_matrix
 
 if TYPE_CHECKING:
@@ -93,7 +94,9 @@ class BandgapSweep(InnerSweep[ExampleDut]):
 def main() -> None:
     """Run every inner test point at every outer operating condition."""
     LOGGER_HELPER.configure()
-    dut = create_example_dut()
+    dut = DutFactory.create(get_duts()[0])
+    if not isinstance(dut, ExampleDut):  # pragma: no cover - example configuration
+        raise TypeError("The selected DUT is not configured for this example")
     for outer_sweep in create_outer_matrix():
         outer_sweep.set_temperature()
         outer_sweep.enable_temperature()

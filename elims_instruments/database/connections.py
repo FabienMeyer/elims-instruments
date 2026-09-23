@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from ipaddress import IPv4Address
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, field_validator
 from sqlalchemy import JSON
 from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, SQLModel
@@ -18,11 +19,7 @@ class SocketConnection(SQLModel):
     """Socket connection settings."""
 
     kind: Literal["socket"] = "socket"
-    ip_address: str = Field(
-        min_length=1,
-        max_length=15,
-        regex=r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$",
-    )
+    ip_address: str = Field(min_length=7, max_length=15)
     port: int = Field(ge=1, le=65535)
     mac_address: str | None = Field(
         default=None,
@@ -31,6 +28,12 @@ class SocketConnection(SQLModel):
         regex=r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$",
     )
     timeout_seconds: float = Field(default=5.0, gt=0)
+
+    @field_validator("ip_address")
+    @classmethod
+    def validate_ip_address(cls, value: str) -> str:
+        """Require a valid IPv4 address while retaining string serialization."""
+        return str(IPv4Address(value))
 
 
 class VisaConnection(SQLModel):
