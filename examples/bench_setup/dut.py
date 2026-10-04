@@ -34,7 +34,26 @@ class ExampleDut(Dut):
 # DutModel records identify their runtime driver by ``project``.
 DutFactory.register(PROJECT_DRIVER_NAME, ExampleDut)
 
+
+def get_dut(dut_id: str) -> ExampleDut:
+    """Load one DUT by database ID and create its runtime driver."""
+    repository = DutCrud(logging.getLogger(__name__), BENCH_CONFIGURATION)
+    try:
+        dut = repository.fetch("id", dut_id)
+    finally:
+        repository.engine.dispose()
+
+    if dut is None:
+        raise LookupError(f"DUT not found: {dut_id}")
+
+    driver = DutFactory.create(dut)
+    if not isinstance(driver, ExampleDut):
+        raise TypeError(f"Unexpected DUT driver: {type(driver).__name__}")
+    return driver
+
+
 def get_duts() -> list[DutModel]:
+    """Load every persisted DUT record."""
     repository = DutCrud(logging.getLogger(__name__), BENCH_CONFIGURATION)
     try:
         duts = repository.fetchall()

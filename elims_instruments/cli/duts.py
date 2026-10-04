@@ -140,9 +140,16 @@ def update_by_id(
     clear_serial_number: Annotated[bool, typer.Option()] = False,
     clear_lot_number: Annotated[bool, typer.Option()] = False,
     clear_wafer_id: Annotated[bool, typer.Option()] = False,
+    clear_metal_revision: Annotated[bool, typer.Option()] = False,
+    clear_package_revision: Annotated[bool, typer.Option()] = False,
     clear_die_position: Annotated[bool, typer.Option()] = False,
 ) -> None:
     """Update a DUT selected by ID."""
+    if metal_revision is not None and clear_metal_revision:
+        raise typer.BadParameter("cannot set and clear metal revision")
+    if package_revision is not None and clear_package_revision:
+        raise typer.BadParameter("cannot set and clear package revision")
+
     changes: dict[str, object] = {
         field: value
         for field, value in {
@@ -164,6 +171,8 @@ def update_by_id(
         (clear_serial_number, "serial_number"),
         (clear_lot_number, "lot_number"),
         (clear_wafer_id, "wafer_id"),
+        (clear_metal_revision, "metal_revision"),
+        (clear_package_revision, "package_revision"),
     ):
         if clear:
             changes[field] = None
@@ -200,8 +209,15 @@ def delete_by_id(
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
     """Delete one DUT by ID."""
-    with _repository(configuration) as repository:
-        removed = repository.remove("id", dut_id)
+    try:
+        with _repository(configuration) as repository:
+            removed = repository.remove("id", dut_id)
+    except IntegrityError as error:
+        typer.echo(
+            f"DUT is referenced by a project and cannot be deleted: {dut_id}",
+            err=True,
+        )
+        raise typer.Exit(code=1) from error
     if not removed:
         typer.echo(f"DUT not found: {dut_id}", err=True)
         raise typer.Exit(code=1)

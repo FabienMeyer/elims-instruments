@@ -23,13 +23,26 @@ class DutFactory:
     _registry: ClassVar[dict[str, DutBuilder]] = {}
 
     @classmethod
-    def register(cls, project: str, builder: DutBuilder) -> None:
+    def register(
+        cls,
+        project: str,
+        builder: DutBuilder,
+        *,
+        replace: bool = False,
+    ) -> None:
         """Register a specialized builder for a DUT project."""
         if not isinstance(project, str) or not project.strip():
             raise ValueError("DUT project must be a non-empty string")
         if not callable(builder):
             raise TypeError("DUT builder must be callable")
         normalized_project = project.strip().casefold()
+        registered = cls._registry.get(normalized_project)
+        if registered is builder:
+            return
+        if registered is not None and not replace:
+            raise ValueError(
+                f"DUT project already has a registered builder: {project!r}"
+            )
         cls._registry[normalized_project] = builder
         logger.debug(
             "Registered DUT builder {} for project {}",

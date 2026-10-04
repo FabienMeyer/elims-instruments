@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 from pydantic import ValidationError
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from elims_instruments.database import DutCrud, DutModel, parse_dut_list
 
@@ -53,6 +55,39 @@ def test_ic_dut_round_trip(repository: DutCrud) -> None:
     assert stored.package_revision == "R1"
     assert stored.lot_number == "LOT-001"
     assert (stored.die_x, stored.die_y) == (12, 8)
+
+
+def test_referenced_dut_cannot_be_deleted(repository: DutCrud) -> None:
+    """SQLite enforces project-to-DUT references during deletion."""
+    repository.add(
+        DutModel(
+            id="dut-1",
+            asset_tag="DUT-001",
+            project="demo-project",
+            corner="TT",
+            die_revision="A",
+        )
+    )
+    with repository.engine.begin() as connection:
+        assert connection.execute(text("PRAGMA foreign_keys")).scalar_one() == 1
+        connection.execute(
+            text(
+                "INSERT INTO projects "
+                "(id, internal_name, datasheet_name, specifications) "
+                "VALUES ('project-1', 'demo-project', 'Demo Project', '[]')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO project_supported_duts (project_id, dut_id) "
+                "VALUES ('project-1', 'dut-1')"
+            )
+        )
+
+    with pytest.raises(IntegrityError):
+        repository.remove("id", "dut-1")
+
+    assert repository.fetch("id", "dut-1") is not None
 
 
 def test_parse_dut_list_validates_records() -> None:

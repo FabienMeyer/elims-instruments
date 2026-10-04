@@ -31,11 +31,16 @@ class Dut(ABC):
 
     def report_value(self) -> list[str]:
         """Return the persisted DUT information as CSV values."""
+        revision = self.dut.die_revision
+        if self.dut.metal_revision is not None:
+            revision += str(self.dut.metal_revision)
+        if self.dut.package_revision is not None:
+            revision += self.dut.package_revision
         return [
-            self.dut.asset_tag,
-            str(self.dut.serial_number),
-            str(self.dut.corner),
-            f"{self.dut.die_revision}{self.dut.metal_revision or ''}{self.dut.package_revision}",
+            self.get_id(),
+            self.dut.serial_number or "",
+            self.dut.corner,
+            revision,
         ]
 
     @abstractmethod

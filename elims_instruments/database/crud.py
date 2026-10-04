@@ -7,11 +7,13 @@ from pathlib import Path
 from tomllib import TOMLDecodeError, load
 from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
+from sqlalchemy import event
 from sqlalchemy.engine import URL, make_url
 from sqlmodel import Session, SQLModel, create_engine, select
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from sqlite3 import Connection as SQLiteConnection
 
     from sqlalchemy.engine import Engine
     from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -38,6 +40,18 @@ class DuplicateAssetTagError(ValueError):
         """Initialize the error with the conflicting asset tag."""
         self.asset_tag = asset_tag
         super().__init__(f"Asset tag already exists: {asset_tag}")
+
+
+def _enable_sqlite_foreign_keys(
+    connection: SQLiteConnection,
+    _connection_record: object,
+) -> None:
+    """Enable SQLite foreign-key enforcement for a new connection."""
+    cursor = connection.cursor()
+    try:
+        cursor.execute("PRAGMA foreign_keys=ON")
+    finally:
+        cursor.close()
 
 
 @dataclass(frozen=True)
@@ -113,7 +127,10 @@ class Crud(Generic[ModelT]):
     def _create_engine(self) -> Engine:
         """Create an engine from the database TOML configuration."""
         settings = read_database_settings(self.toml_path)
-        return create_engine(settings.url, echo=settings.echo)
+        engine = create_engine(settings.url, echo=settings.echo)
+        if settings.url.get_backend_name() == "sqlite":
+            event.listen(engine, "connect", _enable_sqlite_foreign_keys)
+        return engine
 
     def _column(self, field: str) -> InstrumentedAttribute[object]:
         """Return a model column after validating its public field name."""

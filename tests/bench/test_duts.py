@@ -31,6 +31,10 @@ class CharacterizationDut(Dut):
         super().reset()
 
 
+class AlternateDut(CharacterizationDut):
+    """Alternative driver used to verify explicit factory replacement."""
+
+
 @pytest.fixture
 def bench_configuration(tmp_path: Path) -> Path:
     """Create a database containing one IC DUT."""
@@ -56,7 +60,7 @@ def bench_configuration(tmp_path: Path) -> Path:
 
 def test_create_duts_uses_registered_project(bench_configuration: Path) -> None:
     """A registered project creates a concrete DUT object."""
-    DutFactory.register("demo-project", CharacterizationDut)
+    DutFactory.register("demo-project", CharacterizationDut, replace=True)
     duts = create_duts({"characterized_ic": "DUT-001"}, bench_configuration)
 
     assert type(duts.characterized_ic) is CharacterizationDut
@@ -102,7 +106,65 @@ def test_factory_rejects_invalid_registration() -> None:
         DutFactory.register("demo-project", None)  # type: ignore[arg-type]
 
 
+def test_factory_requires_explicit_builder_replacement() -> None:
+    """A project driver cannot be silently replaced by another builder."""
+    DutFactory.register("replacement-project", CharacterizationDut)
+    DutFactory.register("replacement-project", CharacterizationDut)
+
+    with pytest.raises(ValueError, match="already has a registered builder"):
+        DutFactory.register("replacement-project", AlternateDut)
+
+    DutFactory.register("replacement-project", AlternateDut, replace=True)
+    model = DutModel(
+        id="dut-replacement",
+        asset_tag="DUT-REPLACEMENT",
+        project="replacement-project",
+        corner="TT",
+        die_revision="A",
+    )
+    assert isinstance(DutFactory.create(model), AlternateDut)
+
+
 def test_create_duts_rejects_missing_asset(bench_configuration: Path) -> None:
     """A missing DUT asset tag raises a DUT-specific error."""
     with pytest.raises(DutAssetNotFoundError, match="DUT-999"):
         create_duts({"missing": "DUT-999"}, bench_configuration)
+
+
+def test_dut_report_values_match_headers() -> None:
+    """DUT reports contain the persistent ID and complete revision identity."""
+    driver = CharacterizationDut(
+        DutModel(
+            id="dut-1",
+            asset_tag="DUT-001",
+            project="demo-project",
+            corner="TT",
+            die_revision="A",
+            metal_revision=0,
+            package_revision="R1",
+            serial_number="SN-001",
+        )
+    )
+
+    assert driver.report_header() == [
+        "dut_id",
+        "serial_number",
+        "corner",
+        "revision",
+    ]
+    assert driver.report_value() == ["dut-1", "SN-001", "TT", "A0R1"]
+
+
+def test_dut_report_omits_missing_optional_values() -> None:
+    """Absent serial and revision components are not rendered as None."""
+    driver = CharacterizationDut(
+        DutModel(
+            id="dut-2",
+            asset_tag="DUT-002",
+            project="demo-project",
+            corner="SS",
+            die_revision="B",
+        )
+    )
+
+    assert driver.report_value() == ["dut-2", "", "SS", "B"]

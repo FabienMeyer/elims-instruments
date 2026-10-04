@@ -113,7 +113,7 @@ class DemoProject(Project):
 @pytest.fixture
 def bench_configuration(tmp_path: Path) -> Path:
     """Create a combined bench configuration and populated database."""
-    DutFactory.register("demo-project", DemoDut)
+    DutFactory.register("demo-project", DemoDut, replace=True)
     ProjectFactory.register("demo-project", DemoProject)
     configuration = tmp_path / "bench.toml"
     database = (tmp_path / "instruments.db").as_posix()
