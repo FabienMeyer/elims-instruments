@@ -451,6 +451,10 @@ def update_by_id(
     clear_boards: Annotated[bool, typer.Option()] = False,
 ) -> None:
     """Update a project by ID; specification options replace every profile."""
+    if supported_duts is not None and clear_duts:
+        raise typer.BadParameter("--dut cannot be combined with --clear-duts")
+    if supported_boards is not None and clear_boards:
+        raise typer.BadParameter("--board cannot be combined with --clear-boards")
     if (
         new_internal_name is None
         and datasheet_name is None
@@ -587,8 +591,18 @@ def sync_yaml(
         projects = parse_project_list(raw_data)
         with _repository(configuration) as repository:
             created, updated = repository.upsert_many(projects)
-    except (OSError, yaml.YAMLError, ValidationError, ValueError) as error:
+    except (OSError, yaml.YAMLError, ValidationError, ValueError, LookupError) as error:
         typer.echo(f"Invalid project YAML: {error}", err=True)
+        raise typer.Exit(code=1) from error
+    except IntegrityError as error:
+        typer.echo(
+            "Could not synchronize projects: project ID or internal name "
+            "already exists",
+            err=True,
+        )
+        raise typer.Exit(code=1) from error
+    except StatementError as error:
+        typer.echo(f"Invalid project YAML: {error.orig}", err=True)
         raise typer.Exit(code=1) from error
     typer.echo(f"Created: {created}; Updated: {updated}")
 

@@ -6,7 +6,6 @@ import logging
 
 from elims_instruments.bench import Project, ProjectFactory
 from elims_instruments.database import ProjectCrud, ProjectModel
-from examples.bench_setup.dut import get_duts
 from elims_instruments.utils.logger import LOGGER_HELPER, get_logger
 from examples.bench_setup.constants import (
     BENCH_CONFIGURATION,
@@ -34,7 +33,9 @@ class ExampleProject(Project):
 # ProjectModel records identify their runtime driver by ``internal_name``.
 ProjectFactory.register(PROJECT_DRIVER_NAME, ExampleProject)
 
+
 def get_projects() -> list[ProjectModel]:
+    """Return every project configured in the example database."""
     repository = ProjectCrud(logging.getLogger(__name__), BENCH_CONFIGURATION)
     try:
         projects = repository.fetchall()
@@ -46,12 +47,11 @@ def main() -> None:
     """Load project records, create their drivers, and display them."""
     LOGGER_HELPER.configure()
 
-    for dut in get_duts():
-        for project in get_projects():
-            driver = ProjectFactory.create(project)
+    for project in get_projects():
+        driver = ProjectFactory.create(project)
+        for dut in project.supported_duts:
             logger.info(driver.voltage_specifications_for(dut))
             logger.info(driver.temperature_specifications_for(dut))
-        
 
 
 if __name__ == "__main__":

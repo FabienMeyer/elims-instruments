@@ -236,6 +236,19 @@ class ProjectCrud(Crud[ProjectModel]):
             resolved.append(stored)
         return resolved
 
+    @staticmethod
+    def _validate_dut_projects(
+        internal_name: str,
+        duts: Sequence[DutModel],
+    ) -> None:
+        """Require supported DUTs to belong to the same named project."""
+        for dut in duts:
+            if dut.project != internal_name:
+                raise ValueError(
+                    f"DUT {dut.id} belongs to project {dut.project!r}, "
+                    f"not {internal_name!r}"
+                )
+
     def add(self, data: ProjectModel) -> ProjectModel:
         """Persist a project and its supported resource relationships."""
         self.logger.debug(self.add.__name__)
@@ -244,6 +257,10 @@ class ProjectCrud(Crud[ProjectModel]):
             validated.supported_duts = self._resolve_duts(
                 session,
                 data.supported_duts,
+            )
+            self._validate_dut_projects(
+                validated.internal_name,
+                validated.supported_duts,
             )
             validated.supported_boards = self._resolve_boards(
                 session,
@@ -283,6 +300,10 @@ class ProjectCrud(Crud[ProjectModel]):
                 supported_duts = self._resolve_duts(
                     session,
                     incoming.supported_duts,
+                )
+                self._validate_dut_projects(
+                    incoming.internal_name,
+                    supported_duts,
                 )
                 for dut in supported_duts:
                     incoming.specifications_for(dut)

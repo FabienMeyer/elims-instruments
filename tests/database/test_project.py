@@ -252,6 +252,48 @@ def test_project_rejects_unstored_supported_resource(
         repository.add(project)
 
 
+def test_project_rejects_dut_from_another_project(
+    repository: ProjectCrud,
+    resources: tuple[DutModel, DutModel, BoardModel],
+) -> None:
+    """A supported DUT must identify the project that attaches it."""
+    first_dut, _, _ = resources
+    project = ProjectModel(
+        id="project-1",
+        internal_name="another-project",
+        datasheet_name="Another IC",
+        specifications=revision_specifications(),
+    )
+    project.supported_duts = [first_dut]
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "DUT dut-1 belongs to project 'demo-project', "
+            "not 'another-project'"
+        ),
+    ):
+        repository.add(project)
+
+
+def test_project_upsert_rejects_dut_from_another_project(
+    repository: ProjectCrud,
+    resources: tuple[DutModel, DutModel, BoardModel],
+) -> None:
+    """Bulk synchronization enforces the same DUT ownership invariant."""
+    first_dut, _, _ = resources
+    project = ProjectModel(
+        id="project-1",
+        internal_name="another-project",
+        datasheet_name="Another IC",
+        specifications=revision_specifications(),
+    )
+    project.supported_duts = [first_dut]
+
+    with pytest.raises(ValueError, match="DUT dut-1 belongs to project"):
+        repository.upsert_many([project])
+
+
 def test_project_rejects_supported_dut_without_revision_profile(
     repository: ProjectCrud,
     resources: tuple[DutModel, DutModel, BoardModel],
