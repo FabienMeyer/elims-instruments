@@ -129,7 +129,7 @@ def create_instruments(
         logger.info("Created 0 instrument drivers")
         return InstrumentCollection({})
 
-    repository = InstrumentCrud(logger, configuration)
+    repository = InstrumentCrud(logger, configuration, create_tables=False)
     instruments: dict[str, InstrumentDriver] = {}
     try:
         for name, asset_tag in assignments.items():

@@ -113,7 +113,7 @@ def create_duts(
         logger.info("Created 0 DUTs")
         return DutCollection({})
 
-    repository = DutCrud(logger, configuration)
+    repository = DutCrud(logger, configuration, create_tables=False)
     duts: dict[str, Dut] = {}
     try:
         for name, asset_tag in assignments.items():

@@ -97,10 +97,16 @@ def _validate_assignments(
         configuration,
     )
     assignments = raw_configuration.get(specification.section)
-    if assignments is None and specification.optional:
-        return {}
+    if assignments is None:
+        if specification.optional:
+            return {}
+        raise BenchConfigurationError.missing_assignment_table(
+            specification.section,
+        )
     if not isinstance(assignments, dict):
-        raise BenchConfigurationError.missing_instruments_table()
+        raise BenchConfigurationError.invalid_assignment_table(
+            specification.section,
+        )
 
     validated: dict[str, str] = {}
     used_asset_tags: set[str] = set()
@@ -187,14 +193,16 @@ class Bench:
         )
 
     def report_header(self) -> list[str]:
-        """Return headers for the configured bench assets."""
+        """Return unique, role-qualified headers for configured bench assets."""
         headers: list[str] = []
-        for instrument in self.instruments.values():
-            headers.extend(instrument.report_header())
-        for board in self.boards.values():
-            headers.extend(board.report_header())
-        for dut in self.duts.values():
-            headers.extend(dut.report_header())
+        for name, instrument in self.instruments.items():
+            headers.extend(
+                f"instrument_{name}_{header}" for header in instrument.report_header()
+            )
+        for name, board in self.boards.items():
+            headers.extend(f"board_{name}_{header}" for header in board.report_header())
+        for name, dut in self.duts.items():
+            headers.extend(f"dut_{name}_{header}" for header in dut.report_header())
         return headers
 
     def report_value(self) -> list[str]:

@@ -120,7 +120,7 @@ def create_boards(
         logger.info("Created 0 board drivers")
         return BoardCollection({})
 
-    repository = BoardCrud(logger, configuration)
+    repository = BoardCrud(logger, configuration, create_tables=False)
     boards: dict[str, Board] = {}
     try:
         for name, asset_tag in assignments.items():

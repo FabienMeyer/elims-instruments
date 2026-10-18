@@ -18,9 +18,19 @@ class BenchConfigurationError(ValueError):
         return cls("Authorized bench names must be strings")
 
     @classmethod
+    def missing_assignment_table(cls, section: str) -> Self:
+        """Create an error for a missing required assignment table."""
+        return cls(f"bench.toml must contain an [{section}] table")
+
+    @classmethod
+    def invalid_assignment_table(cls, section: str) -> Self:
+        """Create an error for an assignment section that is not a table."""
+        return cls(f"bench.toml [{section}] must be a table")
+
+    @classmethod
     def missing_instruments_table(cls) -> Self:
         """Create an error for a missing ``[instruments]`` table."""
-        return cls("bench.toml must contain an [instruments] table")
+        return cls.missing_assignment_table("instruments")
 
     @classmethod
     def unauthorized_board_name(cls, name: object) -> Self:

@@ -75,6 +75,12 @@ project = bench.projects.characterization
 assert dmm is same_dmm
 ```
 
+Bench metadata used in characterization reports is qualified by asset category
+and configured role. For example, the instrument above contributes
+`instrument_primary_dmm_asset_tag` and
+`instrument_primary_dmm_calibration_date`. This keeps report columns unique
+when several assets expose fields with the same underlying name.
+
 ## Validation rules
 
 Bench loading fails before characterization begins when:
@@ -99,3 +105,11 @@ url = "sqlite:///data/assets.db"
 
 For a configuration at `C:/benches/lab-a/bench.toml`, this resolves to
 `C:/benches/lab-a/data/assets.db`.
+
+Loading a bench reads the existing schema but does not create missing database
+tables. Initialize and upgrade the schema explicitly with the database CLI
+before loading the bench:
+
+```powershell
+uv run elims database upgrade --config bench.toml
+```

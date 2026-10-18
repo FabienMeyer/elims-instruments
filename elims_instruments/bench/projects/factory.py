@@ -100,7 +100,7 @@ def create_projects(
         logger.info("Created 0 projects")
         return ProjectCollection({})
 
-    repository = ProjectCrud(logger, configuration)
+    repository = ProjectCrud(logger, configuration, create_tables=False)
     projects: dict[str, Project] = {}
     try:
         for name, project_name in assignments.items():

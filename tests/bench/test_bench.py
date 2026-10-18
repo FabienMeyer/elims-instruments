@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from loguru import logger
+from sqlmodel import SQLModel
 
 import elims_instruments.bench.bench as bench_module
 from elims_instruments.bench import (
@@ -313,6 +314,83 @@ def test_bench_reads_configuration_once(
     assert load_count == 1
 
 
+def test_bench_report_columns_are_unique_and_role_qualified(
+    bench_configuration: Path,
+) -> None:
+    """A multi-asset bench produces unambiguous characterization columns."""
+    _write_bench_configuration(
+        bench_configuration,
+        '[instruments]\nprimary_dmm = "DMM-001"\ncounter = "CNT-001"\n'
+        '[boards]\ncharacterization_board = "BRD-001"\n'
+        '[duts]\ncharacterized_ic = "DUT-001"\n',
+    )
+    bench = Bench(
+        bench_configuration,
+        authorized_instrument_names=ProjectInstrumentName,
+        authorized_board_names=ProjectBoardName,
+        authorized_dut_names=ProjectDutName,
+    )
+
+    headers = bench.report_header()
+
+    assert headers == [
+        "instrument_primary_dmm_asset_tag",
+        "instrument_primary_dmm_calibration_date",
+        "instrument_counter_asset_tag",
+        "instrument_counter_calibration_date",
+        "board_characterization_board_asset_tag",
+        "dut_characterized_ic_dut_id",
+        "dut_characterized_ic_serial_number",
+        "dut_characterized_ic_corner",
+        "dut_characterized_ic_revision",
+    ]
+    assert len(headers) == len(set(headers))
+    assert bench.report_value() == [
+        "DMM-001",
+        "",
+        "CNT-001",
+        "",
+        "BRD-001",
+        "dut-1",
+        "",
+        "TT",
+        "A",
+    ]
+
+
+def test_bench_loading_does_not_create_database_tables(
+    bench_configuration: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolving a complete bench never performs schema creation."""
+    _write_bench_configuration(
+        bench_configuration,
+        '[instruments]\nprimary_dmm = "DMM-001"\n'
+        '[boards]\ncharacterization_board = "BRD-001"\n'
+        '[duts]\ncharacterized_ic = "DUT-001"\n'
+        '[projects]\ncharacterization = "demo-project"\n',
+    )
+
+    def reject_schema_creation(*args: object, **kwargs: object) -> None:
+        del args, kwargs
+        pytest.fail("Bench loading attempted to create database tables")
+
+    monkeypatch.setattr(SQLModel.metadata, "create_all", reject_schema_creation)
+
+    bench = Bench(
+        bench_configuration,
+        authorized_instrument_names=ProjectInstrumentName,
+        authorized_board_names=ProjectBoardName,
+        authorized_dut_names=ProjectDutName,
+        authorized_project_names=BenchProjectName,
+    )
+
+    assert len(bench.instruments) == 1
+    assert len(bench.boards) == 1
+    assert len(bench.duts) == 1
+    assert len(bench.projects) == 1
+
+
 def test_bench_without_board_table_has_empty_board_collection(
     bench_configuration: Path,
 ) -> None:
@@ -329,6 +407,51 @@ def test_bench_without_board_table_has_empty_board_collection(
 
     assert len(bench.boards) == 0
     assert len(bench.projects) == 0
+
+
+def test_bench_requires_instruments_table(bench_configuration: Path) -> None:
+    """The required instrument section has a specific missing-table error."""
+    with pytest.raises(
+        BenchConfigurationError,
+        match=r"must contain an \[instruments\] table",
+    ):
+        Bench(
+            bench_configuration,
+            authorized_instrument_names=ProjectInstrumentName,
+        )
+
+
+@pytest.mark.parametrize(
+    ("section", "authorized_names_argument", "authorized_names"),
+    [
+        ("instruments", "authorized_instrument_names", ProjectInstrumentName),
+        ("boards", "authorized_board_names", ProjectBoardName),
+        ("duts", "authorized_dut_names", ProjectDutName),
+        ("projects", "authorized_project_names", BenchProjectName),
+    ],
+)
+def test_bench_rejects_non_table_assignment_sections(
+    bench_configuration: Path,
+    section: str,
+    authorized_names_argument: str,
+    authorized_names: type[StrEnum],
+) -> None:
+    """Malformed assignment sections identify the section that is invalid."""
+    database_configuration = bench_configuration.read_text(encoding="utf-8")
+    configuration = f'{section} = "invalid"\n{database_configuration}'
+    if section != "instruments":
+        configuration += '[instruments]\nprimary_dmm = "DMM-001"\n'
+    bench_configuration.write_text(configuration, encoding="utf-8")
+    arguments: dict[str, object] = {
+        "authorized_instrument_names": ProjectInstrumentName,
+        authorized_names_argument: authorized_names,
+    }
+
+    with pytest.raises(
+        BenchConfigurationError,
+        match=rf"\[{section}\] must be a table",
+    ):
+        Bench(bench_configuration, **arguments)  # type: ignore[arg-type]
 
 
 def test_bench_rejects_unauthorized_project_name(
