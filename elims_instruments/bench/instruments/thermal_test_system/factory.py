@@ -20,6 +20,8 @@ class ThermalTestSystemFactory:
         cls,
         model: str,
         driver_class: type[ThermalTestSystem],
+        *,
+        replace: bool = False,
     ) -> None:
         """Register a thermal test system model or alias."""
         if not isinstance(model, str) or not model.strip():
@@ -31,7 +33,16 @@ class ThermalTestSystemFactory:
             raise TypeError(
                 "Thermal test system driver must be a ThermalTestSystem subclass"
             )
-        cls._registry[model.strip().casefold()] = driver_class
+        normalized_model = model.strip().casefold()
+        registered = cls._registry.get(normalized_model)
+        if registered is driver_class:
+            return
+        if registered is not None and not replace:
+            raise ValueError(
+                "Thermal test system model already has a registered driver: "
+                f"{model!r}"
+            )
+        cls._registry[normalized_model] = driver_class
         logger.debug(
             "Registered thermal test system model {} with driver {}",
             model,
@@ -55,12 +66,7 @@ class ThermalTestSystemFactory:
             driver_class.__name__,
             instrument.asset_tag,
         )
-        try:
-            return driver_class(instrument)
-        except Exception as error:
-            raise TypeError(
-                f"Failed to instantiate {instrument.model}: {error}"
-            ) from error
+        return driver_class(instrument)
 
 
 def create_thermal_test_system(

@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import TYPE_CHECKING
 
 import pytest
 import yaml
 from click import unstyle
+from sqlalchemy import text
 from typer.testing import CliRunner
 
 from elims_instruments.cli.boards import app
+from elims_instruments.database import BoardCrud
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -118,6 +121,46 @@ def test_add_rejects_incomplete_socket_connection(configuration: Path) -> None:
     output = unstyle(result.output)
     assert "ip-address" in output
     assert "port" in output
+
+
+def test_boards_only_offer_supported_connection_types() -> None:
+    """Board help does not advertise the unsupported VISA connection type."""
+    result = CliRunner().invoke(app, ["add", "--help"])
+
+    assert result.exit_code == 0
+    output = unstyle(result.output)
+    assert "<socket|com|usb>" in output
+    assert "visa" not in output
+
+
+def test_connection_options_must_match_selected_type(configuration: Path) -> None:
+    """Type-specific options cannot be silently discarded."""
+    result = CliRunner().invoke(
+        app,
+        [
+            "add",
+            "board-1",
+            "--asset-tag",
+            "BOARD-001",
+            "--type",
+            "controller",
+            "--maker",
+            "Acme",
+            "--model",
+            "CTRL-1",
+            "--connection",
+            "com",
+            "--com-port",
+            "COM3",
+            "--vendor-id",
+            "1234",
+            "--config",
+            str(configuration),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "com connections do not accept --vendor-id" in unstyle(result.output)
 
 
 def test_usb_and_board_serial_numbers_are_independent(configuration: Path) -> None:
@@ -294,3 +337,75 @@ def test_export_and_sync_yaml(configuration: Path, tmp_path: Path) -> None:
     synced = runner.invoke(app, ["sync", str(yaml_path), *common])
     assert synced.exit_code == 0, synced.output
     assert "Created: 1; Updated: 1" in synced.stdout
+
+
+def test_delete_rejects_board_referenced_by_project(configuration: Path) -> None:
+    """The CLI explains why a project-supported board cannot be deleted."""
+    runner = CliRunner()
+    common = ["--config", str(configuration)]
+    added = runner.invoke(
+        app,
+        [
+            "add",
+            "board-1",
+            "--asset-tag",
+            "BOARD-001",
+            "--type",
+            "controller",
+            "--maker",
+            "Acme",
+            "--model",
+            "CTRL-1",
+            "--connection",
+            "com",
+            "--com-port",
+            "COM3",
+            *common,
+        ],
+    )
+    assert added.exit_code == 0, added.output
+
+    repository = BoardCrud(logging.getLogger(__name__), configuration)
+    try:
+        with repository.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO projects "
+                    "(id, internal_name, datasheet_name, specifications) "
+                    "VALUES ('project-1', 'demo-project', 'Demo Project', '[]')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO project_supported_boards (project_id, board_id) "
+                    "VALUES ('project-1', 'board-1')"
+                )
+            )
+    finally:
+        repository.engine.dispose()
+
+    deleted = runner.invoke(app, ["delete", "board-1", *common])
+
+    assert deleted.exit_code == 1
+    assert (
+        "Board is referenced by a project and cannot be deleted: board-1"
+        in deleted.output
+    )
+
+
+def test_sync_reports_invalid_configuration_as_config_error(tmp_path: Path) -> None:
+    """A bad database configuration is not mislabeled as invalid YAML."""
+    configuration = tmp_path / "invalid.toml"
+    configuration.write_text("[wrong]\n", encoding="utf-8")
+    source = tmp_path / "boards.yaml"
+    source.write_text("[]\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        app,
+        ["sync", str(source), "--config", str(configuration)],
+    )
+
+    assert result.exit_code == 2
+    output = unstyle(result.output)
+    assert "Invalid database configuration" in output
+    assert "Invalid board YAML" not in output

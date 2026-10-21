@@ -14,18 +14,24 @@ from sqlalchemy.exc import IntegrityError
 from elims_instruments.database import (
     BoardCrud,
     BoardModel,
-    ConnectionKind,
     DuplicateAssetTagError,
     parse_board_list,
 )
 from elims_instruments.utils.logger import get_cli_logger
 
-from .common import ConfigurationOption, managed_repository
+from .common import (
+    ConfigurationOption,
+    apply_optional_change,
+    collect_changes,
+    managed_repository,
+)
 from .connections import (
+    BoardConnectionKind,
     ComConnectionOptions,
     SocketConnectionOptions,
     USBConnectionOptions,
     build_connection,
+    build_optional_connection,
 )
 
 if TYPE_CHECKING:
@@ -41,7 +47,7 @@ def _repository(configuration: Path) -> AbstractContextManager[BoardCrud]:
     """Create a managed repository using the shared CLI logger."""
     logger = get_cli_logger()
     logger.debug("Opening board repository with {}", configuration)
-    return managed_repository(BoardCrud(logger, configuration))
+    return managed_repository(lambda: BoardCrud(logger, configuration))
 
 
 def _write_board(board: BoardModel) -> None:
@@ -60,7 +66,7 @@ def add(
     maker: Annotated[str, typer.Option(help="Board manufacturer.")],
     model: Annotated[str, typer.Option(help="Board model name.")],
     connection: Annotated[
-        ConnectionKind,
+        BoardConnectionKind,
         typer.Option("--connection", help="Connection type."),
     ],
     configuration: ConfigurationOption = Path("bench.toml"),
@@ -165,7 +171,10 @@ def update_by_id(
     model: Annotated[str | None, typer.Option()] = None,
     serial_number: Annotated[str | None, typer.Option()] = None,
     clear_serial_number: Annotated[bool, typer.Option()] = False,
-    connection: Annotated[ConnectionKind | None, typer.Option("--connection")] = None,
+    connection: Annotated[
+        BoardConnectionKind | None,
+        typer.Option("--connection"),
+    ] = None,
     ip_address: Annotated[str | None, typer.Option()] = None,
     port: Annotated[int | None, typer.Option(min=1, max=65535)] = None,
     mac_address: Annotated[str | None, typer.Option()] = None,
@@ -181,44 +190,44 @@ def update_by_id(
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
     """Update a board selected by ID."""
-    changes: dict[str, object] = {
-        field: value
-        for field, value in {
-            "asset_tag": new_asset_tag,
-            "type": board_type,
-            "maker": maker,
-            "model": model,
-            "serial_number": serial_number,
-        }.items()
-        if value is not None
-    }
-    if clear_serial_number:
-        changes["serial_number"] = None
-    if connection is not None:
-        changes["connection"] = build_connection(
-            connection,
-            socket=SocketConnectionOptions(
-                ip_address=ip_address,
-                port=port,
-                mac_address=mac_address,
-                timeout_seconds=timeout_seconds,
-            ),
-            com=ComConnectionOptions(
-                port=com_port,
-                baud_rate=baud_rate,
-                bytesize=bytesize,
-                stop_bits=stop_bits,
-                parity=parity,
-                timeout_seconds=timeout_seconds,
-            ),
-            usb=USBConnectionOptions(
-                vendor_id=vendor_id,
-                product_id=product_id,
-                serial_number=usb_serial_number,
-                interface=interface,
-                timeout_seconds=timeout_seconds,
-            ),
-        )
+    changes = collect_changes(
+        asset_tag=new_asset_tag,
+        type=board_type,
+        maker=maker,
+        model=model,
+    )
+    apply_optional_change(
+        changes,
+        "serial_number",
+        serial_number,
+        clear=clear_serial_number,
+    )
+    link = build_optional_connection(
+        connection,
+        socket=SocketConnectionOptions(
+            ip_address=ip_address,
+            port=port,
+            mac_address=mac_address,
+            timeout_seconds=timeout_seconds,
+        ),
+        com=ComConnectionOptions(
+            port=com_port,
+            baud_rate=baud_rate,
+            bytesize=bytesize,
+            stop_bits=stop_bits,
+            parity=parity,
+            timeout_seconds=timeout_seconds,
+        ),
+        usb=USBConnectionOptions(
+            vendor_id=vendor_id,
+            product_id=product_id,
+            serial_number=usb_serial_number,
+            interface=interface,
+            timeout_seconds=timeout_seconds,
+        ),
+    )
+    if link is not None:
+        changes["connection"] = link
     if not changes:
         raise typer.BadParameter("provide at least one field to update")
 
@@ -250,8 +259,15 @@ def delete_by_id(
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
     """Delete one board by ID."""
-    with _repository(configuration) as repository:
-        removed = repository.remove("id", board_id)
+    try:
+        with _repository(configuration) as repository:
+            removed = repository.remove("id", board_id)
+    except IntegrityError as error:
+        typer.echo(
+            f"Board is referenced by a project and cannot be deleted: {board_id}",
+            err=True,
+        )
+        raise typer.Exit(code=1) from error
     if not removed:
         typer.echo(f"Board not found: {board_id}", err=True)
         raise typer.Exit(code=1)

@@ -69,6 +69,8 @@ def _authorized_name_values(authorized_names: AuthorizedNames) -> set[str]:
     """Normalize a project-owned enum or collection of authorized names."""
     if isinstance(authorized_names, type) and issubclass(authorized_names, StrEnum):
         return {member.value for member in authorized_names}
+    if isinstance(authorized_names, str):
+        raise BenchConfigurationError.invalid_authorized_names()
     if any(not isinstance(name, str) for name in authorized_names):
         raise BenchConfigurationError.invalid_authorized_names()
     return set(authorized_names)
@@ -184,6 +186,7 @@ class Bench:
         self.boards = create_boards(board_assignments, configuration)
         self.duts = create_duts(dut_assignments, configuration)
         self.projects = create_projects(project_assignments, configuration)
+        self._validate_project_compatibility()
         logger.info(
             "Loaded bench with {} instruments, {} boards, {} DUTs, and {} projects",
             len(self.instruments),
@@ -191,6 +194,35 @@ class Bench:
             len(self.duts),
             len(self.projects),
         )
+
+    def _validate_project_compatibility(self) -> None:
+        """Require configured assets to be supported by a selected project."""
+        if not self.projects:
+            return
+
+        supported_board_ids = {
+            board.id
+            for project in self.projects.values()
+            for board in project.project.supported_boards
+        }
+        for name, board in self.boards.items():
+            if board.board.id not in supported_board_ids:
+                raise BenchConfigurationError.unsupported_board(
+                    name,
+                    board.board.asset_tag,
+                )
+
+        supported_dut_ids = {
+            dut.id
+            for project in self.projects.values()
+            for dut in project.project.supported_duts
+        }
+        for name, dut in self.duts.items():
+            if dut.dut.id not in supported_dut_ids:
+                raise BenchConfigurationError.unsupported_dut(
+                    name,
+                    dut.dut.asset_tag,
+                )
 
     def report_header(self) -> list[str]:
         """Return unique, role-qualified headers for configured bench assets."""

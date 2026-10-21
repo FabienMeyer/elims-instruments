@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from elims_instruments.database import (
-    ConnectionKind,
+    CalibrationStatus,
     DuplicateAssetTagError,
     InstrumentCrud,
     InstrumentModel,
@@ -21,11 +21,18 @@ from elims_instruments.database import (
 )
 from elims_instruments.utils.logger import get_cli_logger
 
-from .common import ConfigurationOption, managed_repository
+from .common import (
+    ConfigurationOption,
+    apply_optional_change,
+    collect_changes,
+    managed_repository,
+)
 from .connections import (
+    InstrumentConnectionKind,
     SocketConnectionOptions,
     VisaConnectionOptions,
     build_connection,
+    build_optional_connection,
 )
 
 if TYPE_CHECKING:
@@ -41,7 +48,7 @@ def _repository(configuration: Path) -> AbstractContextManager[InstrumentCrud]:
     """Create a managed repository using the shared CLI logger."""
     logger = get_cli_logger()
     logger.debug("Opening instrument repository with {}", configuration)
-    return managed_repository(InstrumentCrud(logger, configuration))
+    return managed_repository(lambda: InstrumentCrud(logger, configuration))
 
 
 def _write_instrument(instrument: InstrumentModel) -> None:
@@ -63,11 +70,24 @@ def add(
     maker: Annotated[str, typer.Option(help="Instrument manufacturer.")],
     model: Annotated[str, typer.Option(help="Instrument model name.")],
     connection: Annotated[
-        ConnectionKind,
+        InstrumentConnectionKind,
         typer.Option("--connection", help="Connection type."),
     ],
     configuration: ConfigurationOption = Path("bench.toml"),
     serial_number: Annotated[str | None, typer.Option()] = None,
+    calibration_date: Annotated[
+        str | None,
+        typer.Option(help="Calibration date in YYYY-MM-DD format."),
+    ] = None,
+    calibration_due_date: Annotated[
+        str | None,
+        typer.Option(help="Calibration due date in YYYY-MM-DD format."),
+    ] = None,
+    calibration_certificate_number: Annotated[str | None, typer.Option()] = None,
+    calibration_status: Annotated[
+        CalibrationStatus,
+        typer.Option(),
+    ] = CalibrationStatus.UNKNOWN,
     ip_address: Annotated[str | None, typer.Option()] = None,
     port: Annotated[int | None, typer.Option(min=1, max=65535)] = None,
     mac_address: Annotated[str | None, typer.Option()] = None,
@@ -97,6 +117,10 @@ def add(
                 "maker": maker,
                 "model": model,
                 "serial_number": serial_number,
+                "calibration_date": calibration_date,
+                "calibration_due_date": calibration_due_date,
+                "calibration_certificate_number": calibration_certificate_number,
+                "calibration_status": calibration_status,
                 "connection": link,
             }
         )
@@ -155,7 +179,23 @@ def update_by_id(
     model: Annotated[str | None, typer.Option()] = None,
     serial_number: Annotated[str | None, typer.Option()] = None,
     clear_serial_number: Annotated[bool, typer.Option()] = False,
-    connection: Annotated[ConnectionKind | None, typer.Option("--connection")] = None,
+    calibration_date: Annotated[
+        str | None,
+        typer.Option(help="Calibration date in YYYY-MM-DD format."),
+    ] = None,
+    clear_calibration_date: Annotated[bool, typer.Option()] = False,
+    calibration_due_date: Annotated[
+        str | None,
+        typer.Option(help="Calibration due date in YYYY-MM-DD format."),
+    ] = None,
+    clear_calibration_due_date: Annotated[bool, typer.Option()] = False,
+    calibration_certificate_number: Annotated[str | None, typer.Option()] = None,
+    clear_calibration_certificate_number: Annotated[bool, typer.Option()] = False,
+    calibration_status: Annotated[CalibrationStatus | None, typer.Option()] = None,
+    connection: Annotated[
+        InstrumentConnectionKind | None,
+        typer.Option("--connection"),
+    ] = None,
     ip_address: Annotated[str | None, typer.Option()] = None,
     port: Annotated[int | None, typer.Option(min=1, max=65535)] = None,
     mac_address: Annotated[str | None, typer.Option()] = None,
@@ -163,33 +203,43 @@ def update_by_id(
     timeout_seconds: Annotated[float | None, typer.Option(min=0.001)] = None,
 ) -> None:
     """Update an instrument selected by ID."""
-    changes: dict[str, object] = {
-        field: value
-        for field, value in {
-            "asset_tag": new_asset_tag,
-            "type": instrument_type,
-            "maker": maker,
-            "model": model,
-            "serial_number": serial_number,
-        }.items()
-        if value is not None
-    }
-    if clear_serial_number:
-        changes["serial_number"] = None
-    if connection is not None:
-        changes["connection"] = build_connection(
-            connection,
-            socket=SocketConnectionOptions(
-                ip_address=ip_address,
-                port=port,
-                mac_address=mac_address,
-                timeout_seconds=timeout_seconds,
-            ),
-            visa=VisaConnectionOptions(
-                resource_name=resource_name,
-                timeout_seconds=timeout_seconds,
-            ),
-        )
+    changes = collect_changes(
+        asset_tag=new_asset_tag,
+        type=instrument_type,
+        maker=maker,
+        model=model,
+        calibration_status=calibration_status,
+    )
+    for field, value, clear in (
+        ("serial_number", serial_number, clear_serial_number),
+        ("calibration_date", calibration_date, clear_calibration_date),
+        (
+            "calibration_due_date",
+            calibration_due_date,
+            clear_calibration_due_date,
+        ),
+        (
+            "calibration_certificate_number",
+            calibration_certificate_number,
+            clear_calibration_certificate_number,
+        ),
+    ):
+        apply_optional_change(changes, field, value, clear=clear)
+    link = build_optional_connection(
+        connection,
+        socket=SocketConnectionOptions(
+            ip_address=ip_address,
+            port=port,
+            mac_address=mac_address,
+            timeout_seconds=timeout_seconds,
+        ),
+        visa=VisaConnectionOptions(
+            resource_name=resource_name,
+            timeout_seconds=timeout_seconds,
+        ),
+    )
+    if link is not None:
+        changes["connection"] = link
     if not changes:
         raise typer.BadParameter("provide at least one field to update")
 

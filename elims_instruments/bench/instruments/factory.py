@@ -37,12 +37,22 @@ class InstrumentFactory:
         cls,
         instrument_type: InstrumentType,
         builder: InstrumentBuilder,
+        *,
+        replace: bool = False,
     ) -> None:
         """Register the builder responsible for an instrument category."""
         if not isinstance(instrument_type, InstrumentType):
             raise TypeError("Instrument type must be an InstrumentType")
         if not callable(builder):
             raise TypeError("Instrument builder must be callable")
+        registered = cls._registry.get(instrument_type)
+        if registered is builder:
+            return
+        if registered is not None and not replace:
+            raise ValueError(
+                "Instrument type already has a registered builder: "
+                f"{instrument_type.value!r}"
+            )
         cls._registry[instrument_type] = builder
         logger.debug(
             "Registered driver builder {} for instrument type {}",

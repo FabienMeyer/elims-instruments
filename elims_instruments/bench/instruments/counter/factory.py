@@ -20,7 +20,13 @@ class CounterFactory:
     _registry: ClassVar[dict[str, type[Counter]]] = {}
 
     @classmethod
-    def register(cls, model: str, counter_class: type[Counter]) -> None:
+    def register(
+        cls,
+        model: str,
+        counter_class: type[Counter],
+        *,
+        replace: bool = False,
+    ) -> None:
         """Register a counter model.
 
         Args:
@@ -37,7 +43,15 @@ class CounterFactory:
             Counter,
         ):
             raise TypeError("Counter driver must be a Counter subclass")
-        cls._registry[model.strip().casefold()] = counter_class
+        normalized_model = model.strip().casefold()
+        registered = cls._registry.get(normalized_model)
+        if registered is counter_class:
+            return
+        if registered is not None and not replace:
+            raise ValueError(
+                f"Counter model already has a registered driver: {model!r}"
+            )
+        cls._registry[normalized_model] = counter_class
         logger.debug(
             "Registered counter model {} with driver {}",
             model,
@@ -72,12 +86,7 @@ class CounterFactory:
             counter_class.__name__,
             instrument.asset_tag,
         )
-        try:
-            return counter_class(instrument)
-        except Exception as error:
-            raise TypeError(
-                f"Failed to instantiate {instrument.model}: {error}"
-            ) from error
+        return counter_class(instrument)
 
 
 def create_counter(instrument: InstrumentModel) -> Counter:

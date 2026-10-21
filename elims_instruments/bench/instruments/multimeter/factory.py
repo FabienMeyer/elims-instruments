@@ -20,7 +20,13 @@ class MultimeterFactory:
     _registry: ClassVar[dict[str, type[Multimeter]]] = {}
 
     @classmethod
-    def register(cls, model: str, multimeter_class: type[Multimeter]) -> None:
+    def register(
+        cls,
+        model: str,
+        multimeter_class: type[Multimeter],
+        *,
+        replace: bool = False,
+    ) -> None:
         """Register a multimeter model.
 
         Args:
@@ -37,7 +43,15 @@ class MultimeterFactory:
             Multimeter,
         ):
             raise TypeError("Multimeter driver must be a Multimeter subclass")
-        cls._registry[model.strip().casefold()] = multimeter_class
+        normalized_model = model.strip().casefold()
+        registered = cls._registry.get(normalized_model)
+        if registered is multimeter_class:
+            return
+        if registered is not None and not replace:
+            raise ValueError(
+                f"Multimeter model already has a registered driver: {model!r}"
+            )
+        cls._registry[normalized_model] = multimeter_class
         logger.debug(
             "Registered multimeter model {} with driver {}",
             model,
@@ -72,12 +86,7 @@ class MultimeterFactory:
             multimeter_class.__name__,
             instrument.asset_tag,
         )
-        try:
-            return multimeter_class(instrument)
-        except Exception as error:
-            raise TypeError(
-                f"Failed to instantiate {instrument.model}: {error}"
-            ) from error
+        return multimeter_class(instrument)
 
 
 def create_multimeter(instrument: InstrumentModel) -> Multimeter:

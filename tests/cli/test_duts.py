@@ -218,6 +218,10 @@ def test_update_clears_optional_revisions(configuration: Path) -> None:
     [
         ["--metal-revision", "1", "--clear-metal-revision"],
         ["--package-revision", "R1", "--clear-package-revision"],
+        ["--serial-number", "SN-1", "--clear-serial-number"],
+        ["--lot-number", "LOT-1", "--clear-lot-number"],
+        ["--wafer-id", "W-1", "--clear-wafer-id"],
+        ["--die-x", "1", "--die-y", "2", "--clear-die-position"],
     ],
 )
 def test_update_rejects_setting_and_clearing_revision(
@@ -279,6 +283,5 @@ def test_delete_rejects_dut_referenced_by_project(configuration: Path) -> None:
 
     assert deleted.exit_code == 1
     assert (
-        "DUT is referenced by a project and cannot be deleted: dut-1"
-        in deleted.output
+        "DUT is referenced by a project and cannot be deleted: dut-1" in deleted.output
     )

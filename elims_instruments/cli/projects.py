@@ -54,7 +54,7 @@ def _repository(configuration: Path) -> AbstractContextManager[ProjectCrud]:
     """Create a managed repository using the shared CLI logger."""
     logger = get_cli_logger()
     logger.debug("Opening project repository with {}", configuration)
-    return managed_repository(ProjectCrud(logger, configuration))
+    return managed_repository(lambda: ProjectCrud(logger, configuration))
 
 
 def _project_data(project: ProjectModel) -> dict[str, object]:
@@ -193,7 +193,7 @@ def _write_project(project: ProjectModel) -> None:
 def _resolve_duts(identifiers: list[str], configuration: Path) -> list[DutModel]:
     """Resolve DUT IDs or asset tags supplied on the command line."""
     logger = get_cli_logger()
-    with managed_repository(DutCrud(logger, configuration)) as repository:
+    with managed_repository(lambda: DutCrud(logger, configuration)) as repository:
         duts: list[DutModel] = []
         for identifier in identifiers:
             dut = repository.fetch("id", identifier) or repository.fetch(
@@ -212,7 +212,7 @@ def _resolve_boards(
 ) -> list[BoardModel]:
     """Resolve board IDs or asset tags supplied on the command line."""
     logger = get_cli_logger()
-    with managed_repository(BoardCrud(logger, configuration)) as repository:
+    with managed_repository(lambda: BoardCrud(logger, configuration)) as repository:
         boards: list[BoardModel] = []
         for identifier in identifiers:
             board = repository.fetch("id", identifier) or repository.fetch(

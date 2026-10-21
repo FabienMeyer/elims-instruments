@@ -81,3 +81,17 @@ class BenchConfigurationError(ValueError):
     def duplicate_asset_tag(cls, asset_tag: str) -> Self:
         """Create an error for an asset assigned to multiple names."""
         return cls(f"Asset tag is assigned more than once: {asset_tag}")
+
+    @classmethod
+    def unsupported_board(cls, name: str, asset_tag: str) -> Self:
+        """Create an error for a board unsupported by selected projects."""
+        return cls(
+            f"Board {name!r} ({asset_tag}) is not supported by any selected project"
+        )
+
+    @classmethod
+    def unsupported_dut(cls, name: str, asset_tag: str) -> Self:
+        """Create an error for a DUT unsupported by selected projects."""
+        return cls(
+            f"DUT {name!r} ({asset_tag}) is not supported by any selected project"
+        )

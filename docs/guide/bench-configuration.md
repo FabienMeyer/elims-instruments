@@ -85,11 +85,18 @@ when several assets expose fields with the same underlying name.
 
 Bench loading fails before characterization begins when:
 
+- an authorized-name argument is a plain string instead of a collection or
+  `StrEnum` type;
 - a role is not present in its authorized-name collection;
 - a role is not a public, non-keyword Python identifier;
 - a reference is empty, duplicated within a section, or absent from the database;
 - an instrument category or model has no registered factory;
-- a DUT or project name has no registered concrete builder.
+- a DUT or project name has no registered concrete builder;
+- a configured board or DUT is unsupported by every selected project.
+
+When several projects are selected, their supported board and DUT sets are
+combined. A bench without a `[projects]` table remains valid and does not apply
+project compatibility checks.
 
 The returned collections are read-only views, which prevents a characterization
 sequence from silently replacing configured resources.

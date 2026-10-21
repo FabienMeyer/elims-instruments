@@ -45,16 +45,19 @@ def bench_configuration(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     repository = DutCrud(logging.getLogger(__name__), configuration)
-    repository.add(
-        DutModel(
-            id="dut-1",
-            asset_tag="DUT-001",
-            project="demo-project",
-            corner="TT",
-            die_revision="A",
-            lot_number="LOT-001",
+    try:
+        repository.add(
+            DutModel(
+                id="dut-1",
+                asset_tag="DUT-001",
+                project="demo-project",
+                corner="TT",
+                die_revision="A",
+                lot_number="LOT-001",
+            )
         )
-    )
+    finally:
+        repository.engine.dispose()
     return configuration
 
 

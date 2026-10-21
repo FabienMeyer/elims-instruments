@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import TypeVar
 
 import typer
@@ -18,6 +19,21 @@ from elims_instruments.database import (
 )
 
 ValueT = TypeVar("ValueT")
+
+
+class InstrumentConnectionKind(StrEnum):
+    """Connection types supported by instrument CLI commands."""
+
+    SOCKET = "socket"
+    VISA = "visa"
+
+
+class BoardConnectionKind(StrEnum):
+    """Connection types supported by board CLI commands."""
+
+    SOCKET = "socket"
+    COM = "com"
+    USB = "usb"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -64,6 +80,50 @@ class VisaConnectionOptions:
 def _value_or_default(value: ValueT | None, default: ValueT) -> ValueT:
     """Use a model default only when the CLI option was omitted."""
     return default if value is None else value
+
+
+ConnectionOptions = (
+    SocketConnectionOptions
+    | ComConnectionOptions
+    | USBConnectionOptions
+    | VisaConnectionOptions
+)
+
+
+def _provided_options(options: ConnectionOptions | None) -> list[str]:
+    """Return explicitly supplied type-specific options, excluding shared timeout."""
+    if options is None:
+        return []
+    return [
+        f"--{field.replace('_', '-')}"
+        for field, value in vars(options).items()
+        if field != "timeout_seconds" and value is not None
+    ]
+
+
+def _has_options(options: ConnectionOptions | None) -> bool:
+    """Report whether any value was supplied for an option group."""
+    return options is not None and any(
+        value is not None for value in vars(options).values()
+    )
+
+
+def _reject_unselected_options(
+    selected: ConnectionKind,
+    groups: tuple[tuple[ConnectionKind, ConnectionOptions | None], ...],
+) -> None:
+    """Reject options that belong to a different connection type."""
+    unexpected = [
+        option
+        for kind, options in groups
+        if kind is not selected
+        for option in _provided_options(options)
+    ]
+    if unexpected:
+        raise typer.BadParameter(
+            f"{selected.value} connections do not accept {', '.join(unexpected)}",
+            param_hint="--connection",
+        )
 
 
 def _build_socket(options: SocketConnectionOptions) -> SocketConnection:
@@ -124,7 +184,7 @@ def _build_visa(options: VisaConnectionOptions) -> VisaConnection:
 
 
 def build_connection(
-    kind: ConnectionKind,
+    kind: ConnectionKind | str,
     *,
     socket: SocketConnectionOptions | None = None,
     com: ComConnectionOptions | None = None,
@@ -133,7 +193,22 @@ def build_connection(
 ) -> Connection:
     """Build the selected connection from its type-specific option group."""
     try:
-        match kind:
+        selected = ConnectionKind(kind)
+    except ValueError as error:
+        raise typer.BadParameter(
+            f"unsupported connection kind: {kind}",
+            param_hint="--connection",
+        ) from error
+
+    groups = (
+        (ConnectionKind.SOCKET, socket),
+        (ConnectionKind.COM, com),
+        (ConnectionKind.USB, usb),
+        (ConnectionKind.VISA, visa),
+    )
+    _reject_unselected_options(selected, groups)
+    try:
+        match selected:
             case ConnectionKind.SOCKET:
                 return _build_socket(socket or SocketConnectionOptions())
             case ConnectionKind.COM:
@@ -145,7 +220,22 @@ def build_connection(
     except ValidationError as error:
         raise typer.BadParameter(str(error), param_hint="--connection") from error
 
-    raise typer.BadParameter(
-        f"unsupported connection kind: {kind}",
-        param_hint="--connection",
-    )
+    raise AssertionError("all connection kinds must be handled")
+
+
+def build_optional_connection(
+    kind: ConnectionKind | str | None,
+    *,
+    socket: SocketConnectionOptions | None = None,
+    com: ComConnectionOptions | None = None,
+    usb: USBConnectionOptions | None = None,
+    visa: VisaConnectionOptions | None = None,
+) -> Connection | None:
+    """Build an update value, requiring a kind when any options were supplied."""
+    if kind is None:
+        if any(_has_options(options) for options in (socket, com, usb, visa)):
+            raise typer.BadParameter(
+                "--connection is required when connection options are supplied"
+            )
+        return None
+    return build_connection(kind, socket=socket, com=com, usb=usb, visa=visa)

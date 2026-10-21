@@ -151,6 +151,9 @@ client-facing name and does not affect driver selection.
 ## Registration guidance
 
 - Register builders during deterministic application startup.
+- Registering the same builder again is harmless. Replacing an existing board,
+  DUT, project, instrument-category, or instrument-model builder requires the
+  explicit `replace=True` argument.
 - Keep database records free of executable Python import paths.
 - Reject unknown models/projects rather than selecting a vaguely compatible driver.
 - Unit-test aliases, invalid registrations, and the concrete type returned.

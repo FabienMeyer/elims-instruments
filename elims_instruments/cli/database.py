@@ -6,7 +6,7 @@ import typer
 
 from elims_instruments.database.migrations import upgrade_database
 
-from .common import ConfigurationOption
+from .common import ConfigurationOption, configuration_errors
 
 app = typer.Typer(help="Manage the ELIMS database schema.", no_args_is_help=True)
 
@@ -16,5 +16,6 @@ def upgrade(
     configuration: ConfigurationOption = Path("bench.toml"),
 ) -> None:
     """Upgrade the configured database to the latest schema."""
-    upgrade_database(configuration)
+    with configuration_errors():
+        upgrade_database(configuration)
     typer.echo("Database upgraded to head")

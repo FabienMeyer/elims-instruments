@@ -115,7 +115,7 @@ class DemoProject(Project):
 def bench_configuration(tmp_path: Path) -> Path:
     """Create a combined bench configuration and populated database."""
     DutFactory.register("demo-project", DemoDut, replace=True)
-    ProjectFactory.register("demo-project", DemoProject)
+    ProjectFactory.register("demo-project", DemoProject, replace=True)
     configuration = tmp_path / "bench.toml"
     database = (tmp_path / "instruments.db").as_posix()
     configuration.write_text(
@@ -123,48 +123,57 @@ def bench_configuration(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     repository = InstrumentCrud(logging.getLogger(__name__), configuration)
-    repository.upsert_many(
-        [
-            InstrumentModel(
-                id="dmm-1",
-                asset_tag="DMM-001",
-                type=InstrumentType.MULTIMETER,
-                maker="Keysight",
-                model="34401A",
-                connection=VisaConnection(resource_name="GPIB0::1::INSTR"),
-            ),
-            InstrumentModel(
-                id="counter-1",
-                asset_tag="CNT-001",
-                type=InstrumentType.COUNTER,
-                maker="Keysight",
-                model="53220A",
-                connection=VisaConnection(resource_name="GPIB0::2::INSTR"),
-            ),
-        ]
-    )
+    try:
+        repository.upsert_many(
+            [
+                InstrumentModel(
+                    id="dmm-1",
+                    asset_tag="DMM-001",
+                    type=InstrumentType.MULTIMETER,
+                    maker="Keysight",
+                    model="34401A",
+                    connection=VisaConnection(resource_name="GPIB0::1::INSTR"),
+                ),
+                InstrumentModel(
+                    id="counter-1",
+                    asset_tag="CNT-001",
+                    type=InstrumentType.COUNTER,
+                    maker="Keysight",
+                    model="53220A",
+                    connection=VisaConnection(resource_name="GPIB0::2::INSTR"),
+                ),
+            ]
+        )
+    finally:
+        repository.engine.dispose()
     board_repository = BoardCrud(logging.getLogger(__name__), configuration)
-    board = board_repository.add(
-        BoardModel(
-            id="board-1",
-            asset_tag="BRD-001",
-            type="generic",
-            maker="ELIMS",
-            model="Characterization Board A",
-            connection=USBConnection(vendor_id=1, product_id=2),
+    try:
+        board = board_repository.add(
+            BoardModel(
+                id="board-1",
+                asset_tag="BRD-001",
+                type="generic",
+                maker="ELIMS",
+                model="Characterization Board A",
+                connection=USBConnection(vendor_id=1, product_id=2),
+            )
         )
-    )
+    finally:
+        board_repository.engine.dispose()
     dut_repository = DutCrud(logging.getLogger(__name__), configuration)
-    dut = dut_repository.add(
-        DutModel(
-            id="dut-1",
-            asset_tag="DUT-001",
-            project="demo-project",
-            corner="TT",
-            die_revision="A",
-            lot_number="LOT-001",
+    try:
+        dut = dut_repository.add(
+            DutModel(
+                id="dut-1",
+                asset_tag="DUT-001",
+                project="demo-project",
+                corner="TT",
+                die_revision="A",
+                lot_number="LOT-001",
+            )
         )
-    )
+    finally:
+        dut_repository.engine.dispose()
     project = ProjectModel(
         id="project-1",
         internal_name="demo-project",
@@ -174,7 +183,10 @@ def bench_configuration(tmp_path: Path) -> Path:
     project.supported_duts = [dut]
     project.supported_boards = [board]
     project_repository = ProjectCrud(logging.getLogger(__name__), configuration)
-    project_repository.add(project)
+    try:
+        project_repository.add(project)
+    finally:
+        project_repository.engine.dispose()
     return configuration
 
 
@@ -281,6 +293,79 @@ def test_bench_creates_named_project(bench_configuration: Path) -> None:
     assert isinstance(bench.projects.characterization, DemoProject)
     assert bench.projects.characterization.get_id() == "project-1"
     assert bench.projects.characterization.project.supported_duts[0].id == "dut-1"
+
+
+def test_bench_rejects_board_unsupported_by_selected_projects(
+    bench_configuration: Path,
+) -> None:
+    """Selected projects constrain which board fixtures may be loaded."""
+    repository = BoardCrud(logging.getLogger(__name__), bench_configuration)
+    try:
+        repository.add(
+            BoardModel(
+                id="board-unsupported",
+                asset_tag="BRD-999",
+                type="generic",
+                maker="ELIMS",
+                model="Unsupported Fixture",
+                connection=USBConnection(vendor_id=1, product_id=3),
+            )
+        )
+    finally:
+        repository.engine.dispose()
+    _write_bench_configuration(
+        bench_configuration,
+        '[instruments]\nprimary_dmm = "DMM-001"\n'
+        '[boards]\ncharacterization_board = "BRD-999"\n'
+        '[projects]\ncharacterization = "demo-project"\n',
+    )
+
+    with pytest.raises(
+        BenchConfigurationError,
+        match=r"Board 'characterization_board' \(BRD-999\).*selected project",
+    ):
+        Bench(
+            bench_configuration,
+            authorized_instrument_names=ProjectInstrumentName,
+            authorized_board_names=ProjectBoardName,
+            authorized_project_names=BenchProjectName,
+        )
+
+
+def test_bench_rejects_dut_unsupported_by_selected_projects(
+    bench_configuration: Path,
+) -> None:
+    """Selected projects constrain which DUTs may be loaded."""
+    repository = DutCrud(logging.getLogger(__name__), bench_configuration)
+    try:
+        repository.add(
+            DutModel(
+                id="dut-unsupported",
+                asset_tag="DUT-999",
+                project="demo-project",
+                corner="SS",
+                die_revision="A",
+            )
+        )
+    finally:
+        repository.engine.dispose()
+    _write_bench_configuration(
+        bench_configuration,
+        '[instruments]\nprimary_dmm = "DMM-001"\n'
+        '[duts]\ncharacterized_ic = "DUT-999"\n'
+        '[projects]\ncharacterization = "demo-project"\n',
+    )
+
+    with pytest.raises(
+        BenchConfigurationError,
+        match=r"DUT 'characterized_ic' \(DUT-999\).*selected project",
+    ):
+        Bench(
+            bench_configuration,
+            authorized_instrument_names=ProjectInstrumentName,
+            authorized_dut_names=ProjectDutName,
+            authorized_project_names=BenchProjectName,
+        )
 
 
 def test_bench_reads_configuration_once(
@@ -517,6 +602,25 @@ def test_bench_rejects_unauthorized_name(
         Bench(
             bench_configuration,
             authorized_instrument_names=ProjectInstrumentName,
+        )
+
+
+def test_bench_rejects_plain_string_authorized_names(
+    bench_configuration: Path,
+) -> None:
+    """A string cannot be mistaken for a collection of individual names."""
+    _write_bench_configuration(
+        bench_configuration,
+        '[instruments]\nprimary_dmm = "DMM-001"\n',
+    )
+
+    with pytest.raises(
+        BenchConfigurationError,
+        match="Authorized bench names must be strings",
+    ):
+        Bench(
+            bench_configuration,
+            authorized_instrument_names="primary_dmm",
         )
 
 

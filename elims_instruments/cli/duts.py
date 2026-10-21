@@ -19,7 +19,12 @@ from elims_instruments.database import (
 )
 from elims_instruments.utils.logger import get_cli_logger
 
-from .common import ConfigurationOption, managed_repository
+from .common import (
+    ConfigurationOption,
+    apply_optional_change,
+    collect_changes,
+    managed_repository,
+)
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
@@ -34,7 +39,7 @@ def _repository(configuration: Path) -> AbstractContextManager[DutCrud]:
     """Create a managed repository using the shared CLI logger."""
     logger = get_cli_logger()
     logger.debug("Opening DUT repository with {}", configuration)
-    return managed_repository(DutCrud(logger, configuration))
+    return managed_repository(lambda: DutCrud(logger, configuration))
 
 
 def _write_dut(dut: DutModel) -> None:
@@ -145,37 +150,25 @@ def update_by_id(
     clear_die_position: Annotated[bool, typer.Option()] = False,
 ) -> None:
     """Update a DUT selected by ID."""
-    if metal_revision is not None and clear_metal_revision:
-        raise typer.BadParameter("cannot set and clear metal revision")
-    if package_revision is not None and clear_package_revision:
-        raise typer.BadParameter("cannot set and clear package revision")
+    if clear_die_position and (die_x is not None or die_y is not None):
+        raise typer.BadParameter("cannot set and clear die position")
 
-    changes: dict[str, object] = {
-        field: value
-        for field, value in {
-            "asset_tag": new_asset_tag,
-            "project": project,
-            "corner": corner,
-            "die_revision": die_revision,
-            "metal_revision": metal_revision,
-            "package_revision": package_revision,
-            "serial_number": serial_number,
-            "lot_number": lot_number,
-            "wafer_id": wafer_id,
-            "die_x": die_x,
-            "die_y": die_y,
-        }.items()
-        if value is not None
-    }
-    for clear, field in (
-        (clear_serial_number, "serial_number"),
-        (clear_lot_number, "lot_number"),
-        (clear_wafer_id, "wafer_id"),
-        (clear_metal_revision, "metal_revision"),
-        (clear_package_revision, "package_revision"),
+    changes = collect_changes(
+        asset_tag=new_asset_tag,
+        project=project,
+        corner=corner,
+        die_revision=die_revision,
+        die_x=die_x,
+        die_y=die_y,
+    )
+    for field, value, clear in (
+        ("serial_number", serial_number, clear_serial_number),
+        ("lot_number", lot_number, clear_lot_number),
+        ("wafer_id", wafer_id, clear_wafer_id),
+        ("metal_revision", metal_revision, clear_metal_revision),
+        ("package_revision", package_revision, clear_package_revision),
     ):
-        if clear:
-            changes[field] = None
+        apply_optional_change(changes, field, value, clear=clear)
     if clear_die_position:
         changes.update({"die_x": None, "die_y": None})
     if not changes:

@@ -49,6 +49,10 @@ class CharacterizationProject(Project):
         return self.project.id
 
 
+class AlternateProject(CharacterizationProject):
+    """Alternative driver used to verify explicit factory replacement."""
+
+
 @pytest.fixture
 def bench_configuration(tmp_path: Path) -> Path:
     """Create a database containing one project."""
@@ -59,14 +63,17 @@ def bench_configuration(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     repository = ProjectCrud(logging.getLogger(__name__), configuration)
-    repository.add(
-        ProjectModel(
-            id="project-1",
-            internal_name="demo-project",
-            datasheet_name="Demo IC",
-            specifications=revision_specifications(),
+    try:
+        repository.add(
+            ProjectModel(
+                id="project-1",
+                internal_name="demo-project",
+                datasheet_name="Demo IC",
+                specifications=revision_specifications(),
+            )
         )
-    )
+    finally:
+        repository.engine.dispose()
     return configuration
 
 
@@ -99,7 +106,7 @@ def test_project_wraps_project_model() -> None:
 
 def test_create_projects_uses_registered_builder(bench_configuration: Path) -> None:
     """A registered builder creates a project resolved from the database."""
-    ProjectFactory.register("demo-project", CharacterizationProject)
+    ProjectFactory.register("demo-project", CharacterizationProject, replace=True)
     projects = create_projects(
         {"characterization": "demo-project"},
         bench_configuration,
@@ -145,6 +152,25 @@ def test_factory_rejects_invalid_registration() -> None:
 
     with pytest.raises(TypeError, match="callable"):
         ProjectFactory.register("demo-project", None)  # type: ignore[arg-type]
+
+
+def test_factory_requires_explicit_builder_replacement() -> None:
+    """A project driver cannot be silently replaced by another builder."""
+    ProjectFactory.register(
+        "replacement-project",
+        CharacterizationProject,
+        replace=True,
+    )
+    ProjectFactory.register("replacement-project", CharacterizationProject)
+
+    with pytest.raises(ValueError, match="already has a registered builder"):
+        ProjectFactory.register("replacement-project", AlternateProject)
+
+    ProjectFactory.register(
+        "replacement-project",
+        AlternateProject,
+        replace=True,
+    )
 
 
 def test_factory_rejects_invalid_builder_result() -> None:

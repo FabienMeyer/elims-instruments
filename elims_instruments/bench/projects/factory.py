@@ -23,13 +23,26 @@ class ProjectFactory:
     _registry: ClassVar[dict[str, ProjectBuilder]] = {}
 
     @classmethod
-    def register(cls, name: str, builder: ProjectBuilder) -> None:
+    def register(
+        cls,
+        name: str,
+        builder: ProjectBuilder,
+        *,
+        replace: bool = False,
+    ) -> None:
         """Register a specialized builder for a project name."""
         if not isinstance(name, str) or not name.strip():
             raise ValueError("Project name must be a non-empty string")
         if not callable(builder):
             raise TypeError("Project builder must be callable")
         normalized_name = name.strip().casefold()
+        registered = cls._registry.get(normalized_name)
+        if registered is builder:
+            return
+        if registered is not None and not replace:
+            raise ValueError(
+                f"Project already has a registered builder: {name!r}"
+            )
         cls._registry[normalized_name] = builder
         logger.debug(
             "Registered project builder {} for project {}",

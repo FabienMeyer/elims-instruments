@@ -16,7 +16,13 @@ class PowerSupplyFactory:
     _registry: ClassVar[dict[str, type[PowerSupply]]] = {}
 
     @classmethod
-    def register(cls, model: str, power_supply_class: type[PowerSupply]) -> None:
+    def register(
+        cls,
+        model: str,
+        power_supply_class: type[PowerSupply],
+        *,
+        replace: bool = False,
+    ) -> None:
         """Register a power-supply model or alias."""
         if not isinstance(model, str) or not model.strip():
             raise ValueError("Power-supply model must be a non-empty string")
@@ -25,7 +31,15 @@ class PowerSupplyFactory:
             PowerSupply,
         ):
             raise TypeError("Power-supply driver must be a PowerSupply subclass")
-        cls._registry[model.strip().casefold()] = power_supply_class
+        normalized_model = model.strip().casefold()
+        registered = cls._registry.get(normalized_model)
+        if registered is power_supply_class:
+            return
+        if registered is not None and not replace:
+            raise ValueError(
+                f"Power-supply model already has a registered driver: {model!r}"
+            )
+        cls._registry[normalized_model] = power_supply_class
         logger.debug(
             "Registered power-supply model {} with driver {}",
             model,
@@ -49,12 +63,7 @@ class PowerSupplyFactory:
             power_supply_class.__name__,
             instrument.asset_tag,
         )
-        try:
-            return power_supply_class(instrument)
-        except Exception as error:
-            raise TypeError(
-                f"Failed to instantiate {instrument.model}: {error}"
-            ) from error
+        return power_supply_class(instrument)
 
 
 def create_power_supply(instrument: InstrumentModel) -> PowerSupply:

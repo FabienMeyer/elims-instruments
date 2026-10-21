@@ -36,6 +36,15 @@ class ExampleThermalTestSystem(ThermalTestSystem):
         return self.instrument.id
 
 
+class FailingThermalTestSystem(ExampleThermalTestSystem):
+    """Driver whose constructor exposes a domain-specific failure."""
+
+    def __init__(self, instrument: InstrumentModel) -> None:
+        """Reject construction with the original exception type."""
+        del instrument
+        raise RuntimeError("thermal controller is unavailable")
+
+
 def _instrument(
     instrument_type: InstrumentType,
     model: str,
@@ -107,6 +116,22 @@ def test_thermal_test_system_factory_rejects_unknown_model() -> None:
         )
 
 
+def test_model_factory_preserves_constructor_exception() -> None:
+    """Driver initialization failures retain their original exception type."""
+    ThermalTestSystemFactory.register(
+        "failing thermal system",
+        FailingThermalTestSystem,
+    )
+
+    with pytest.raises(RuntimeError, match="thermal controller is unavailable"):
+        ThermalTestSystemFactory.create(
+            _instrument(
+                InstrumentType.THERMAL_TEST_SYSTEM,
+                "failing thermal system",
+            )
+        )
+
+
 def test_factories_reject_invalid_registrations() -> None:
     """Invalid registry keys and builders fail with clear errors."""
     with pytest.raises(ValueError, match="non-empty"):
@@ -139,6 +164,59 @@ def test_factories_reject_invalid_registrations() -> None:
             InstrumentType.MULTIMETER,
             None,  # type: ignore[arg-type]
         )
+
+
+def test_model_factory_requires_explicit_driver_replacement() -> None:
+    """A model driver cannot be silently replaced by another class."""
+
+    class AlternateThermalTestSystem(ExampleThermalTestSystem):
+        pass
+
+    ThermalTestSystemFactory.register(
+        "replacement thermal system",
+        ExampleThermalTestSystem,
+    )
+    ThermalTestSystemFactory.register(
+        "replacement thermal system",
+        ExampleThermalTestSystem,
+    )
+
+    with pytest.raises(ValueError, match="already has a registered driver"):
+        ThermalTestSystemFactory.register(
+            "replacement thermal system",
+            AlternateThermalTestSystem,
+        )
+
+    ThermalTestSystemFactory.register(
+        "replacement thermal system",
+        AlternateThermalTestSystem,
+        replace=True,
+    )
+
+
+def test_instrument_factory_requires_explicit_builder_replacement() -> None:
+    """An instrument-category builder cannot be silently replaced."""
+    original_builder = InstrumentFactory._registry[InstrumentType.MULTIMETER]
+
+    def alternate_builder(instrument: InstrumentModel):
+        return MultimeterFactory.create(instrument)
+
+    with pytest.raises(ValueError, match="already has a registered builder"):
+        InstrumentFactory.register(
+            InstrumentType.MULTIMETER,
+            alternate_builder,
+        )
+
+    InstrumentFactory.register(
+        InstrumentType.MULTIMETER,
+        alternate_builder,
+        replace=True,
+    )
+    InstrumentFactory.register(
+        InstrumentType.MULTIMETER,
+        original_builder,
+        replace=True,
+    )
 
 
 def test_empty_assignments_need_no_database_configuration() -> None:

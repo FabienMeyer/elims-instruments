@@ -30,16 +30,19 @@ def bench_configuration(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     repository = BoardCrud(logging.getLogger(__name__), configuration)
-    repository.add(
-        BoardModel(
-            id="board-1",
-            asset_tag="BRD-001",
-            type="generic",
-            maker="ELIMS",
-            model="Fixture A",
-            connection=USBConnection(vendor_id=1, product_id=2),
+    try:
+        repository.add(
+            BoardModel(
+                id="board-1",
+                asset_tag="BRD-001",
+                type="generic",
+                maker="ELIMS",
+                model="Fixture A",
+                connection=USBConnection(vendor_id=1, product_id=2),
+            )
         )
-    )
+    finally:
+        repository.engine.dispose()
     return configuration
 
 
@@ -83,6 +86,24 @@ def test_factory_rejects_invalid_registration() -> None:
 
     with pytest.raises(TypeError, match="callable"):
         BoardFactory.register("fixture", None)  # type: ignore[arg-type]
+
+
+def test_factory_requires_explicit_builder_replacement() -> None:
+    """A board driver cannot be silently replaced by another builder."""
+
+    class FirstBoard(Board):
+        pass
+
+    class SecondBoard(Board):
+        pass
+
+    BoardFactory.register("replacement-fixture", FirstBoard)
+    BoardFactory.register("replacement-fixture", FirstBoard)
+
+    with pytest.raises(ValueError, match="already has a registered builder"):
+        BoardFactory.register("replacement-fixture", SecondBoard)
+
+    BoardFactory.register("replacement-fixture", SecondBoard, replace=True)
 
 
 def test_factory_rejects_unregistered_board_type() -> None:

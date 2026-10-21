@@ -10,8 +10,8 @@ uv run elims --help
 
 | Group | Purpose |
 | --- | --- |
-| `instruments` | Instrument identity, type, model, and connection settings |
-| `boards` | Board identity and connection settings |
+| `instruments` | Instrument identity, calibration, and socket/VISA settings |
+| `boards` | Board identity and socket/COM/USB settings |
 | `duts` | DUT identity and manufacturing traceability |
 | `projects` | Projects and supported DUT/board relationships |
 | `database` | Alembic schema upgrades |
@@ -23,6 +23,20 @@ its database ID. Use group or command help for the complete option set:
 ```powershell
 uv run elims instruments add --help
 uv run elims projects update --help
+```
+
+Connection-specific options must match `--connection`. Updates that replace a
+connection must provide `--connection` again, together with the required address,
+port, or resource identifier.
+
+Instrument calibration metadata can be maintained directly:
+
+```powershell
+uv run elims instruments update dmm-1 `
+  --calibration-date 2026-10-24 `
+  --calibration-due-date 2027-10-24 `
+  --calibration-certificate-number CERT-42 `
+  --calibration-status valid --config bench.toml
 ```
 
 ## Add related records

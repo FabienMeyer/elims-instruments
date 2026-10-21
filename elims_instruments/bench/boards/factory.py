@@ -27,13 +27,26 @@ class BoardFactory:
     _registry: ClassVar[dict[str, BoardBuilder]] = {"generic": Board}
 
     @classmethod
-    def register(cls, board_type: str, builder: BoardBuilder) -> None:
-        """Register or replace a driver builder for a normalized board type."""
+    def register(
+        cls,
+        board_type: str,
+        builder: BoardBuilder,
+        *,
+        replace: bool = False,
+    ) -> None:
+        """Register a driver builder for a normalized board type."""
         if not isinstance(board_type, str) or not board_type.strip():
             raise ValueError("Board type must be a non-empty string")
         if not callable(builder):
             raise TypeError("Board builder must be callable")
         normalized_type = board_type.strip().casefold()
+        registered = cls._registry.get(normalized_type)
+        if registered is builder:
+            return
+        if registered is not None and not replace:
+            raise ValueError(
+                f"Board type already has a registered builder: {board_type!r}"
+            )
         cls._registry[normalized_type] = builder
         logger.debug(
             "Registered board builder {} for type {}",
