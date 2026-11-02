@@ -9,8 +9,9 @@ into a complete sweep and report:
    `constants.py`.
 2. `bench_setup/bench.py` combines those definitions with `bench.toml` and the
    example database.
-3. `characterization/specifications.py` defines the revision-dependent
-   electrical and thermal limits used by the seeded project.
+3. `characterization/specifications.py` is the single source of truth for the
+   seeded project's revision-dependent electrical and thermal limits. The
+   simulated sources and sweep points are built from that profile.
 4. `characterization/temperature.py` and `voltage.py` demonstrate individual
    simulated sources.
 5. `characterization/voltages.py` reuses the voltage builders to create an
@@ -35,11 +36,29 @@ uv run python -m examples.characterization.inner_sweep
 uv run python -m examples.characterization.report
 ```
 
-The builder functions such as `create_bench()`,
-`create_revision_specifications()`, `create_dut_temperature()`,
-`create_voltages()`, `create_outer_matrix()`, and `create_inner_matrix()` can
-also be imported into a project and adapted to real instrument drivers.
+The individual inventory and factory modules are also executable when you want
+to inspect one resource layer:
+
+```powershell
+uv run python -m examples.bench_setup.instruments
+uv run python -m examples.bench_setup.board
+uv run python -m examples.bench_setup.dut
+uv run python -m examples.bench_setup.project
+```
+
+The complete report contains 16 rows: two temperatures × two adjustable voltage
+points × two iterations × two bandgap measurements. It is written to
+`examples/reports/characterization.csv`.
+
+The builder functions such as `create_characterization_setup()`,
+`create_revision_specifications()`, `create_adjustable_temperature()`,
+`create_voltages()`, `create_outer_matrix()`, and `create_characterization()`
+can also be imported into a project and adapted to real instrument drivers.
 
 The repository includes a ready-to-use `instruments.db`. Run
 `uv run python -m examples.bench_setup.seed_database` only when you need to
 recreate its example records.
+
+For the contracts demonstrated by these modules, continue with
+[Characterization](characterization.md) and
+[Reports and analysis](reports.md).

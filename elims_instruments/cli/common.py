@@ -13,19 +13,16 @@ from elims_instruments.database import DatabaseConfigurationError
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-    from sqlalchemy.engine import Engine
 
+class ClosableRepository(Protocol):
+    """Repository that explicitly releases its owned resources."""
 
-class DisposableRepository(Protocol):
-    """Repository exposing an engine that can be disposed."""
-
-    @property
-    def engine(self) -> Engine:
-        """Return the repository engine."""
+    def close(self) -> None:
+        """Release repository resources."""
         ...
 
 
-RepositoryT = TypeVar("RepositoryT", bound=DisposableRepository)
+RepositoryT = TypeVar("RepositoryT", bound=ClosableRepository)
 
 ConfigurationOption = Annotated[
     Path,
@@ -82,4 +79,4 @@ def managed_repository(
     try:
         yield repository
     finally:
-        repository.engine.dispose()
+        repository.close()

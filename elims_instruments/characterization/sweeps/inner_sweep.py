@@ -38,7 +38,7 @@ class InnerMatrix(ABC, Generic[DutT]):
 
 
 @dataclass(frozen=True, slots=True)
-class InnerSweep(Generic[DutT]):
+class InnerSweep(ABC, Generic[DutT]):
     """Shared values present in every test-specific inner sweep."""
 
     test_id: str

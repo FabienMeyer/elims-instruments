@@ -25,19 +25,18 @@ class CsvSection:
 
 
 class WriteCsvReport:
-    """A CSV report associated with one test and one configured bench."""
+    """Incrementally write contextual columns and per-test measurements."""
 
     def __init__(
         self,
         file: FileHelper,
         *,
         sections: Sequence[CsvSection],
+        measurement_headers: Sequence[str] = (),
     ) -> None:
-        """Initialize a report from the logical CSV sections."""
-        if len(sections) != 4:
-            raise ValueError("WriteCsvReport requires exactly four CSV sections")
-
-        self.sections = sections
+        """Initialize a report from context sections and measurement columns."""
+        self.sections = tuple(sections)
+        self.measurement_headers = tuple(measurement_headers)
         self.file = file
         self._header: list[str] | None = None
         self._rows_written = 0
@@ -48,10 +47,11 @@ class WriteCsvReport:
             "test_id",
             "timestamp",
             *[item for section in self.sections for item in section.header()],
+            *self.measurement_headers,
         ]
 
     def value(self, test_id: str, timestamp: str) -> list[str]:
-        """Return the complete CSV value row for the assembled report."""
+        """Return the contextual prefix shared with a measurement row."""
         return [
             test_id,
             timestamp,
@@ -74,7 +74,7 @@ class WriteCsvReport:
         timestamp: str,
         values: Sequence[str],
     ) -> None:
-        """Append values for one completed sweep to the report."""
+        """Append one completed sweep's measurement values to its context."""
         if self._header is None:
             raise RuntimeError("Report header must be written before data")
         row = [*self.value(test_id, timestamp), *values]

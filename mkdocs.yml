@@ -51,10 +51,15 @@ nav:
   - User guide:
       - Overview: guide/index.md
       - Getting started: guide/getting-started.md
-      - Examples: guide/examples.md
+      - Inventory and database: guide/inventory.md
       - Bench configuration: guide/bench-configuration.md
+      - Driver support: guide/driver-support.md
+      - Characterization: guide/characterization.md
+      - Reports and analysis: guide/reports.md
       - Command-line interface: guide/cli.md
       - Extending drivers: guide/extending-drivers.md
+      - Examples: guide/examples.md
+      - Troubleshooting and logging: guide/troubleshooting.md
   - Architecture: architecture/index.md
   - API reference:
       - Overview: api/index.md

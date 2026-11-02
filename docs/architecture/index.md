@@ -6,10 +6,9 @@ The public API is grouped by responsibility:
 
 ```text
 elims_instruments/
-├── bench/              # Bench, boards, DUTs, and projects
+├── bench/              # Bench, boards, DUTs, projects, and instrument drivers
 ├── characterization/   # Conditions, sweeps, and reports
 ├── database/           # Persistent asset and project models
-├── instruments/        # Instrument drivers and factories
 ├── cli/                # Command-line interface
 └── utils/              # Shared utilities
 ```

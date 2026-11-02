@@ -1,6 +1,7 @@
 """Conditions, sweeps, and reports used for device characterization."""
 
 from .characterization import Characterization
+from .interfaces import Reportable
 from .reports import ReadCsvReport, WriteCsvReport
 from .specifications import ProjectRevisionSpecifications
 from .sweeps import InnerMatrix, InnerSweep, OuterMatrix, OuterSweep
@@ -41,6 +42,7 @@ __all__ = [
     "OuterSweep",
     "ProjectRevisionSpecifications",
     "ReadCsvReport",
+    "Reportable",
     "Temperature",
     "TemperatureGetter",
     "TemperatureSetter",

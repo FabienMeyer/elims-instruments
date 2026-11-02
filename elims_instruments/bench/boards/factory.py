@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from types import MappingProxyType
 from typing import ClassVar
 
+from elims_instruments.bench.factory import (
+    NamedCollection,
+    register_string_builder,
+    resolve_assignments,
+)
 from elims_instruments.database import BoardCrud, BoardModel
 from elims_instruments.utils.logger import LoggerHelper, get_logger
 
@@ -35,19 +39,17 @@ class BoardFactory:
         replace: bool = False,
     ) -> None:
         """Register a driver builder for a normalized board type."""
-        if not isinstance(board_type, str) or not board_type.strip():
-            raise ValueError("Board type must be a non-empty string")
-        if not callable(builder):
-            raise TypeError("Board builder must be callable")
-        normalized_type = board_type.strip().casefold()
-        registered = cls._registry.get(normalized_type)
-        if registered is builder:
-            return
-        if registered is not None and not replace:
-            raise ValueError(
-                f"Board type already has a registered builder: {board_type!r}"
-            )
-        cls._registry[normalized_type] = builder
+        register_string_builder(
+            cls._registry,
+            board_type,
+            builder,
+            key_error="Board type must be a non-empty string",
+            builder_error="Board builder must be callable",
+            duplicate_error=lambda key: (
+                f"Board type already has a registered builder: {key!r}"
+            ),
+            replace=replace,
+        )
         logger.debug(
             "Registered board builder {} for type {}",
             getattr(builder, "__name__", type(builder).__name__),
@@ -79,31 +81,8 @@ class BoardFactory:
         return driver
 
 
-class BoardCollection(Mapping[str, Board]):
+class BoardCollection(NamedCollection[Board]):
     """Read-only board collection supporting mapping and attribute access."""
-
-    def __init__(self, boards: Mapping[str, Board]) -> None:
-        """Store named board drivers in an immutable mapping."""
-        self._drivers = MappingProxyType(dict(boards))
-
-    def __getitem__(self, name: str) -> Board:
-        """Return the board assigned to *name*."""
-        return self._drivers[name]
-
-    def __iter__(self) -> Iterator[str]:
-        """Iterate over configured board names."""
-        return iter(self._drivers)
-
-    def __len__(self) -> int:
-        """Return the number of configured boards."""
-        return len(self._drivers)
-
-    def __getattr__(self, name: str) -> Board:
-        """Allow attribute access such as ``boards.characterization_board``."""
-        try:
-            return self._drivers[name]
-        except KeyError as error:
-            raise AttributeError(name) from error
 
 
 def create_boards(
@@ -133,17 +112,14 @@ def create_boards(
         logger.info("Created 0 board drivers")
         return BoardCollection({})
 
-    repository = BoardCrud(logger, configuration, create_tables=False)
-    boards: dict[str, Board] = {}
-    try:
-        for name, asset_tag in assignments.items():
-            logger.debug("Resolving board {} from asset {}", name, asset_tag)
-            board = repository.fetch("asset_tag", asset_tag)
-            if board is None:
-                raise BoardAssetNotFoundError(asset_tag)
-            boards[name] = BoardFactory.create(board)
-    finally:
-        repository.engine.dispose()
+    with BoardCrud(logger, configuration, create_tables=False) as repository:
+        boards = resolve_assignments(
+            assignments,
+            repository,
+            lookup_field="asset_tag",
+            builder=BoardFactory.create,
+            not_found=BoardAssetNotFoundError,
+        )
     collection = BoardCollection(boards)
     logger.info("Created {} board drivers", len(collection))
     return collection

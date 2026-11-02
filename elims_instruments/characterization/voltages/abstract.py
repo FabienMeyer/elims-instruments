@@ -65,6 +65,10 @@ class Voltage(ABC):
         disable: Disable | None = None,
     ) -> None:
         """Initialize the common, validated voltage state."""
+        if (enable is None) != (disable is None):
+            raise ValueError(
+                "Voltage enable and disable callbacks must be provided together"
+            )
         self.name = specification.name
         self.current_limits = specification.current_limits
         self.voltage_limits = specification.voltage_limits
@@ -126,6 +130,16 @@ class Voltage(ABC):
         current = self._current_getter()
         logger.debug("Measured current for voltage {!r}: {} A", self.name, current)
         return current
+
+    @property
+    def is_readable(self) -> bool:
+        """Return whether the output voltage can be measured."""
+        return self._voltage_getter is not None
+
+    @property
+    def is_switchable(self) -> bool:
+        """Return whether the source has complete output power control."""
+        return self._enable is not None and self._disable is not None
 
     def enable(self) -> None:
         """Enable the voltage source."""
@@ -233,10 +247,7 @@ class AdjustableVoltage(Voltage):
     @setpoint.setter
     def setpoint(self, value: int | float) -> None:
         """Validate and store a new voltage setpoint."""
-        self._voltage_setpoint = self.voltage_limits.validate(
-            value,
-            label=f"voltage for {self.name!r}",
-        )
+        self._voltage_setpoint = self.validate_setpoint(value)
 
     @property
     def is_adjustable(self) -> bool:
@@ -245,13 +256,19 @@ class AdjustableVoltage(Voltage):
 
     def set_voltage(self, voltage: float) -> None:
         """Validate and apply a new voltage setpoint."""
-        value = self.voltage_limits.validate(
-            voltage,
-            label=f"voltage for {self.name!r}",
-        )
+        value = self.validate_setpoint(voltage)
         self._voltage_setter(value)
         self._voltage_setpoint = value
         logger.info("Set voltage {!r} to {} V", self.name, value)
+
+    def validate_setpoint(self, voltage: int | float) -> float:
+        """Return a validated setpoint without writing to hardware."""
+        return float(
+            self.voltage_limits.validate(
+                voltage,
+                label=f"voltage for {self.name!r}",
+            )
+        )
 
     def apply(self) -> None:
         """Apply the currently configured voltage setpoint."""

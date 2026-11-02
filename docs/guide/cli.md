@@ -6,6 +6,9 @@ The `elims` command manages the same validated models used by the Python API.
 uv run elims --help
 ```
 
+`--config`/`-c` defaults to `bench.toml`. Put it after the resource command, as
+shown below.
+
 ## Command groups
 
 | Group | Purpose |
@@ -16,9 +19,22 @@ uv run elims --help
 | `projects` | Projects and supported DUT/board relationships |
 | `database` | Alembic schema upgrades |
 
+The inventory CLI exposes these connection kinds:
+
+| Resource | Connection kinds |
+| --- | --- |
+| Instruments | `socket`, `visa` |
+| Boards | `socket`, `com`, `usb` |
+
+Connection-specific options are rejected when used with another kind. Board
+identity `--serial-number` and USB connection `--usb-serial-number` are separate
+values.
+
 Every resource group provides `add`, `get`, `list`, `update`, `delete`, `sync`,
 and `export`. `get`, `update`, and `delete` consistently select one record by
-its database ID. Use group or command help for the complete option set:
+its database ID. Record-producing commands print JSON; `export` and `sync` use
+YAML files for reviewable bulk changes. Use group or command help for the
+complete option set:
 
 ```powershell
 uv run elims instruments add --help
@@ -51,7 +67,7 @@ uv run elims boards add board-1 `
   --config bench.toml
 
 uv run elims duts add dut-1 `
-  --asset-tag DUT-001 --project demo-project `
+  --asset-tag DUT-001 --project example-project `
   --corner TT --die-revision A `
   --metal-revision 0 --package-revision R1 --config bench.toml
 ```
@@ -60,11 +76,12 @@ Then create a project relationship. `--dut` and `--board` accept either a
 database ID or an asset tag and may be repeated. Inline options create one
 operating profile for an exact die, metal, and package revision combination.
 The internal name is used by code, DUT records, and `bench.toml`; the datasheet
-name is the client-facing product name used in reports and logs.
+name is the stored, human-facing product name that applications can include in
+reports and logs.
 
 ```powershell
 uv run elims projects add project-1 `
-  --internal-name demo-project --datasheet-name "ELIMS Demo IC" `
+  --internal-name example-project --datasheet-name "ELIMS Example IC" `
   --dut DUT-001 --board BRD-001 `
   --die-revision A --metal-revision 0 --package-revision R1 `
   --voltage-name VDD --voltage-minimum 1.1 `
@@ -114,3 +131,6 @@ uv run elims database upgrade --config bench.toml
 ```
 
 Run schema upgrades before using code that introduces new model fields or tables.
+
+For repository methods, relationship validation, and instrument history, see
+[Inventory and database](inventory.md).

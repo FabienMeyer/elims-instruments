@@ -4,6 +4,9 @@ Factories separate persisted identity from project-specific behavior. Concrete
 implementations are registered once during application startup, before loading a
 bench.
 
+Review [Driver support](driver-support.md) first: the built-in Keysight classes
+currently provide model recognition, not implemented communication commands.
+
 ## Add an instrument model
 
 Instrument categories have a category factory and, where useful, a family base
@@ -20,6 +23,11 @@ class KeysightE36399A(KeysightE36300):
 Register every accepted database model spelling in the package initializer:
 
 ```python
+from elims_instruments.bench.instruments.power_supply.factory import (
+    PowerSupplyFactory,
+)
+
+
 PowerSupplyFactory.register("Keysight E36399A", KeysightE36399A)
 PowerSupplyFactory.register("E36399A", KeysightE36399A)
 ```
@@ -29,14 +37,19 @@ Model lookup strips whitespace and ignores case.
 ## Add a DUT implementation
 
 `Dut` is an abstract base class. A concrete class must implement `get_id()` and
-may add project-specific register maps or limits.
+`reset()`, and may add project-specific register maps or operations.
 
 The complete minimal example is in `examples/bench_setup/dut.py`, where the `ExampleDut` class is
-registered for the `demo-project` project:
+registered for the `example-project` project:
 
 ```python
+from examples.bench_setup.board import ExampleBoard
 from examples.bench_setup.dut import ExampleDut
+from examples.bench_setup.project import ExampleProject
 ```
+
+All three imports are required by the complete example configuration because
+each module performs its factory registration during import.
 
 The registry key matches `DutModel.project` and must be registered before
 loading the bench:
@@ -46,7 +59,9 @@ from pathlib import Path
 
 from elims_instruments.bench import Bench
 
-from examples.bench_setup.dut import ExampleDut  # noqa: F401
+from examples.bench_setup.board import ExampleBoard  # noqa: F401
+from examples.bench_setup.dut import ExampleDut
+from examples.bench_setup.project import ExampleProject  # noqa: F401
 
 bench = Bench(
     Path("examples/bench_setup/bench.toml"),
@@ -73,7 +88,7 @@ The CLI remains an inventory-only interface. Use it to create and update the
 you need runtime DUT behavior:
 
 ```powershell
-uv run elims duts get dut-1 --config examples/bench_setup/bench.toml
+uv run elims duts get demo-dut --config examples/bench_setup/bench.toml
 ```
 
 This separation allows a DUT to exist in the inventory before a concrete
@@ -99,6 +114,8 @@ from pathlib import Path
 from elims_instruments.bench import Bench
 
 from examples.bench_setup.board import ExampleBoard  # noqa: F401
+from examples.bench_setup.dut import ExampleDut  # noqa: F401
+from examples.bench_setup.project import ExampleProject  # noqa: F401
 
 bench = Bench(
     Path("examples/bench_setup/bench.toml"),
@@ -125,7 +142,7 @@ characterization_board = "BRD-001"
 Create and update the inventory record independently with the CLI:
 
 ```powershell
-uv run elims boards get board-1 --config examples/bench_setup/bench.toml
+uv run elims boards get demo-characterization-board --config examples/bench_setup/bench.toml
 ```
 
 ## Add a project implementation
@@ -142,7 +159,7 @@ class CharacterizationProject(Project):
         return self.project.id
 
 
-ProjectFactory.register("demo-project", CharacterizationProject)
+ProjectFactory.register("example-project", CharacterizationProject)
 ```
 
 The registry key matches `ProjectModel.internal_name`; `datasheet_name` is the

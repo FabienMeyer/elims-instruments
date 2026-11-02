@@ -1,165 +1,64 @@
 # ELIMS Instruments
 
-Drivers, asset storage, and project bench configuration for ELIMS laboratories.
+Python tools for laboratory inventory, typed bench configuration, instrument
+driver selection, IC characterization sweeps, and incremental CSV reports.
 
-## Setup
+The package keeps persistent identity separate from runtime behavior:
+
+- SQLModel records store instruments, boards, DUTs, projects, connections, and
+  revision-dependent operating limits.
+- `Bench` resolves project-owned role names into validated runtime objects.
+- Characterization composes temperature and voltage conditions with nested
+  sweeps and failure-safe cleanup.
+- The `elims` CLI manages inventory, YAML synchronization, and migrations.
+
+> [!WARNING]
+> This is an alpha package. Built-in Keysight classes currently recognize
+> supported models but do not implement hardware communication. See the
+> [driver support matrix](docs/guide/driver-support.md).
+
+## Quick start
+
+The supported development workflow uses Python 3.11 or newer and
+[uv](https://docs.astral.sh/uv/):
 
 ```powershell
-uv sync
+uv sync --frozen
 uv run pytest
 ```
 
-## CLI
-
-The CLI manages instruments, boards, DUTs, and projects in the configured database:
+Run the database-backed bench and complete simulated characterization:
 
 ```powershell
-uv run elims instruments list --config bench.toml
-uv run elims boards list --config bench.toml
-uv run elims duts list --config bench.toml
-uv run elims projects list --config bench.toml
+uv run python -m examples.bench_setup.bench
+uv run python -m examples.characterization.report
 ```
 
-Each group supports `add`, `get`, `list`, `update`, `delete`, `sync`, and
-`export`. Single-record commands use the database ID. Run
-`uv run elims GROUP --help` for complete options.
+The second command writes `examples/reports/characterization.csv` without
+requiring laboratory hardware.
 
-Upgrade an existing database after pulling schema changes:
+For a fresh database, configure `[database]` in `bench.toml` and apply the
+schema before loading a bench:
 
 ```powershell
 uv run elims database upgrade --config bench.toml
 ```
 
-Example additions:
-
-```powershell
-uv run elims instruments add dmm-1 --asset-tag DMM-001 `
-  --type multimeter --maker Keysight --model 34401A `
-  --connection visa --resource-name GPIB0::1::INSTR
-
-uv run elims boards add board-1 --asset-tag BRD-001 `
-  --type characterization --maker ELIMS --model Fixture-A `
-  --connection usb --vendor-id 4617 --product-id 1
-
-uv run elims duts add dut-1 --asset-tag DUT-001 `
-  --project demo-project --corner TT --die-revision A `
-  --metal-revision 0 --package-revision R1
-
-uv run elims projects add project-1 --internal-name demo-project `
-  --datasheet-name "ELIMS Demo IC" `
-  --dut DUT-001 --board BRD-001 `
-  --die-revision A --metal-revision 0 --package-revision R1 `
-  --voltage-name VDD --voltage-minimum 1.1 `
-  --voltage-typical 1.2 --voltage-maximum 1.3 `
-  --temperature-name DUT --temperature-minimum -40 `
-  --temperature-typical 25 --temperature-maximum 125
-```
-
-## Bench configuration
-
-Instruments and boards are reusable assets. A DUT belongs to one project. Each
-project has an internal name for code and configuration and a client-facing
-datasheet name.
-Names in `bench.toml` are project-defined roles that point to asset tags:
-
-```toml
-[database]
-url = "sqlite:///instruments.db"
-echo = false
-
-[instruments]
-primary_dmm = "DMM-001"
-
-[boards]
-characterization_board = "BRD-001"
-
-[duts]
-characterized_ic = "DUT-001"
-
-[projects]
-characterization = "demo-project"
-```
-
-Relative SQLite paths are resolved from the directory containing `bench.toml`.
-
-Projects authorize those names with `StrEnum` classes and load the bench:
-
-```python
-from enum import StrEnum
-
-from elims_instruments.bench import Bench
-
-
-class InstrumentName(StrEnum):
-    PRIMARY_DMM = "primary_dmm"
-
-
-class BoardName(StrEnum):
-    CHARACTERIZATION_BOARD = "characterization_board"
-
-
-class DutName(StrEnum):
-    CHARACTERIZED_IC = "characterized_ic"
-
-
-class ProjectName(StrEnum):
-    CHARACTERIZATION = "characterization"
-
-
-bench = Bench(
-    authorized_instrument_names=InstrumentName,
-    authorized_board_names=BoardName,
-    authorized_dut_names=DutName,
-    authorized_project_names=ProjectName,
-)
-
-print(bench.instruments.primary_dmm)
-print(bench.boards.characterization_board)
-print(bench.duts.characterized_ic)
-print(bench.projects.characterization)
-```
-
-Concrete DUT and project builders must be registered for their database project
-names before loading assigned DUTs or projects.
-
-## Examples
-
-The `examples` directory contains a ready-to-use `bench.toml` and SQLite
-database:
-
-```powershell
-uv run python -m examples.bench_setup.bench
-uv run python -m examples.characterization.outer_sweep
-uv run python -m examples.characterization.inner_sweep
-uv run python -m examples.characterization.report
-```
-
-See the [examples guide](docs/guide/examples.md) for the recommended order and
-database seeding.
-
 ## Documentation
 
-Preview the documentation with live reload:
+- [Getting started](docs/guide/getting-started.md)
+- [Inventory and database](docs/guide/inventory.md)
+- [Bench configuration](docs/guide/bench-configuration.md)
+- [Characterization](docs/guide/characterization.md)
+- [CLI workflows](docs/guide/cli.md)
+- [API reference](docs/api/index.md)
+
+Preview and validate the documentation locally:
 
 ```powershell
 uv run mkdocs serve
-```
-
-Validate the complete site, including generated API reference pages:
-
-```powershell
 uv run mkdocs build --strict
 ```
 
-The generated `site/` directory is ignored by Git. Documentation sources and
-contributor guidance live under [docs](docs/index.md).
-
-## Driver status
-
-Asset storage, bench loading, and CLI management are implemented. The current
-Keysight classes identify supported models, but hardware operations still raise
-`NotImplementedError` until their communication commands are implemented.
-Import driver factories from `elims_instruments.bench.instruments`.
-
-Library logging is silent until configured. CLI commands enable warning-level
-terminal logging and rotating debug files automatically.
+Contributor setup, quality gates, migrations, and documentation conventions are
+in the [development guide](docs/development/index.md).

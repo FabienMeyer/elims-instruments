@@ -2,26 +2,51 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from elims_instruments.characterization import OuterMatrix
 from elims_instruments.utils.logger import LOGGER_HELPER, LoggerHelper, get_logger
+from examples.characterization.specifications import (
+    DUT_TEMPERATURE_NAME,
+    create_revision_specifications,
+    temperature_specification_for,
+)
 from examples.characterization.temperature import create_adjustable_temperature
-from examples.characterization.voltages import SupplySetPoints, create_voltages
+from examples.characterization.voltages import (
+    create_supply_setpoints,
+    create_voltages,
+)
+
+if TYPE_CHECKING:
+    from elims_instruments.characterization import ProjectRevisionSpecifications
 
 logger = get_logger(__name__, LoggerHelper.Color.CYAN)
 MAIN_BLOCK = "com"
 
 
-def create_outer_matrix() -> OuterMatrix:
+def create_outer_matrix(
+    specifications: ProjectRevisionSpecifications | None = None,
+) -> OuterMatrix:
     """Create the simulated matrix shared by later examples."""
+    profile = specifications or create_revision_specifications()
+    temperature_specification = temperature_specification_for(
+        profile,
+        DUT_TEMPERATURE_NAME,
+    )
+    limits = temperature_specification.temperature_limits
+    temperature_setpoints = tuple(
+        dict.fromkeys(
+            value for value in (limits.minimum, limits.typical) if value is not None
+        )
+    )
     return OuterMatrix(
         test_id=MAIN_BLOCK,
-        temperature=create_adjustable_temperature(),
-        temperature_setpoints=[-40, 25],
-        voltages=create_voltages(),
-        voltage_setpoints=[
-            SupplySetPoints(vdda=1.1),
-            SupplySetPoints(vdda=1.3),
-        ],
+        temperature=create_adjustable_temperature(
+            specification=temperature_specification
+        ),
+        temperature_setpoints=temperature_setpoints,
+        voltages=create_voltages(profile),
+        voltage_setpoints=create_supply_setpoints(profile),
     )
 
 
@@ -31,16 +56,9 @@ def main() -> None:
     matrix = create_outer_matrix()
 
     for sweep in matrix:
-        sweep.set_temperature()
-        sweep.enable_temperature()
-        sweep.set_voltages()
-        sweep.power_up()
-        try:
+        with sweep.applied():
             report = dict(zip(sweep.report_header(), sweep.report_value(), strict=True))
             logger.info("Outer sweep: {}", report)
-        finally:
-            sweep.power_down()
-            sweep.disable_temperature()
 
 
 if __name__ == "__main__":

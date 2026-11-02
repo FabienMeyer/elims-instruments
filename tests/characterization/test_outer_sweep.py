@@ -165,6 +165,160 @@ def test_outer_sweep_validates_setpoints_before_hardware_writes() -> None:
     assert applied == []
 
 
+def test_outer_sweep_validates_every_voltage_before_writing_any() -> None:
+    """One invalid rail prevents writes to otherwise valid earlier rails."""
+    applied: list[tuple[str, float]] = []
+    matrix = OuterMatrix(
+        "operating-point",
+        None,
+        [None],
+        Voltages(
+            [
+                (10, controlled_voltage(applied, "VDD")),
+                (20, controlled_voltage(applied, "VIO")),
+            ]
+        ),
+        [VddVioSetPoints(vdd=1.2, vio=1.0)],
+    )
+
+    with pytest.raises(ValueError, match="outside the allowed range"):
+        next(iter(matrix)).set_voltages()
+
+    assert applied == []
+
+
+def test_outer_sweep_applied_owns_the_complete_hardware_lifecycle() -> None:
+    """The shared context applies conditions and cleans up in safe order."""
+    events: list[str] = []
+    temperature = Temperature(
+        TemperatureSpecification(
+            "DUT",
+            Limits(minimum=-40, typical=25, maximum=125),
+        ),
+        temperature_getter=lambda: 24.8,
+        temperature_setter=lambda value: events.append(f"set temperature {value:g}"),
+        enable=lambda: events.append("enable temperature"),
+        disable=lambda: events.append("disable temperature"),
+    )
+    voltage = AdjustableVoltage(
+        VoltageSpecification(
+            "VDD",
+            Limits(minimum=1.1, typical=1.2, maximum=1.3),
+        ),
+        voltage_getter=lambda: 1.2,
+        voltage_setter=lambda value: events.append(f"set vdd {value:g}"),
+        enable=lambda: events.append("enable vdd"),
+        disable=lambda: events.append("disable vdd"),
+    )
+    sweep = next(
+        iter(
+            OuterMatrix(
+                "operating-point",
+                temperature,
+                [25],
+                Voltages([(10, voltage)]),
+                [VddSetPoints(vdd=1.2)],
+            )
+        )
+    )
+
+    with sweep.applied():
+        events.append("measure")
+
+    assert events == [
+        "set temperature 25",
+        "enable temperature",
+        "set vdd 1.2",
+        "enable vdd",
+        "measure",
+        "disable vdd",
+        "disable temperature",
+    ]
+
+
+def test_outer_sweep_cleans_temperature_after_setup_failure() -> None:
+    """A voltage setup failure cannot leave the temperature source enabled."""
+    events: list[str] = []
+    temperature = Temperature(
+        TemperatureSpecification(
+            "DUT",
+            Limits(minimum=-40, typical=25, maximum=125),
+        ),
+        temperature_setter=lambda _value: events.append("set temperature"),
+        enable=lambda: events.append("enable temperature"),
+        disable=lambda: events.append("disable temperature"),
+    )
+    sweep = next(
+        iter(
+            OuterMatrix(
+                "operating-point",
+                temperature,
+                [25],
+                Voltages([(10, controlled_voltage([]))]),
+                [VddSetPoints(vdd=1.0)],
+            )
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="outside the allowed range",
+    ), sweep.applied():
+        pytest.fail("invalid voltage setup must not enter the body")
+
+    assert events == [
+        "set temperature",
+        "enable temperature",
+        "disable temperature",
+    ]
+
+
+def _leaf_error_messages(error: BaseException) -> list[str]:
+    if isinstance(error, BaseExceptionGroup):
+        return [
+            message
+            for nested in error.exceptions
+            for message in _leaf_error_messages(nested)
+        ]
+    return [str(error)]
+
+
+def test_outer_sweep_preserves_operation_and_all_cleanup_failures() -> None:
+    """Power and thermal cleanup both run without masking the test failure."""
+    temperature = Temperature(
+        TemperatureSpecification("DUT", Limits(typical=25)),
+        temperature_setter=lambda _value: None,
+        enable=lambda: None,
+        disable=lambda: (_ for _ in ()).throw(OSError("thermal cleanup failed")),
+    )
+    voltage = AdjustableVoltage(
+        VoltageSpecification("VDD", Limits(typical=1.2)),
+        voltage_setter=lambda _value: None,
+        enable=lambda: None,
+        disable=lambda: (_ for _ in ()).throw(OSError("voltage cleanup failed")),
+    )
+    sweep = next(
+        iter(
+            OuterMatrix(
+                "operating-point",
+                temperature,
+                [25],
+                Voltages([(10, voltage)]),
+                [VddSetPoints(vdd=1.2)],
+            )
+        )
+    )
+
+    with pytest.raises(BaseExceptionGroup) as caught, sweep.applied():
+        raise RuntimeError("measurement failed")
+
+    assert _leaf_error_messages(caught.value) == [
+        "measurement failed",
+        "voltage cleanup failed",
+        "thermal cleanup failed",
+    ]
+
+
 def test_outer_sweep_reports_through_voltage_collection() -> None:
     """Operating-point reports follow the collection's power order."""
     temperature = Temperature(

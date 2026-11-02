@@ -3,11 +3,15 @@
 ## Requirements
 
 - Python 3.11 or newer
-- [uv](https://docs.astral.sh/uv/) for the documented development workflow
+- [uv](https://docs.astral.sh/uv/) for the locked repository workflow
 
-## Install the project
+Python 3.11 and 3.12 are exercised in CI. Hardware communication can require a
+vendor VISA runtime or another PyVISA backend in addition to the Python package;
+the bundled simulation does not require one.
 
-Clone the repository and install the locked development environment:
+## Install from source
+
+This alpha repository is the documented installation source:
 
 ```powershell
 git clone https://github.com/FabienMeyer/elims-instruments.git
@@ -15,32 +19,33 @@ cd elims-instruments
 uv sync --frozen
 ```
 
-Confirm the installation:
+Confirm the command and test suite:
 
 ```powershell
 uv run elims --help
 uv run pytest
 ```
 
-## Run the bundled example
+## Run the bundled simulation
 
-The example directory contains a bench configuration, a seeded SQLite database,
-and minimal concrete DUT and project implementations.
+The repository includes a ready-to-use `bench.toml`, seeded SQLite database,
+custom board/DUT/project implementations, and callback-backed simulated
+temperature and voltage sources.
 
 ```powershell
 uv run python -m examples.bench_setup.bench
-uv run python -m examples.characterization.outer_sweep
-uv run python -m examples.characterization.inner_sweep
 uv run python -m examples.characterization.report
 ```
 
-`bench.py` resolves and displays two instruments, one board, one DUT, and one
-project. The sweep and report examples then reuse the simpler definitions.
-See the [examples guide](examples.md) for the complete order.
+The first command resolves two instruments, one board, one DUT, and one project.
+The second runs 16 measurement points and writes
+`examples/reports/characterization.csv`. See [Examples](examples.md) for the
+step-by-step modules.
 
 ## Create a fresh database
 
-Create `bench.toml` with a database table:
+Create `bench.toml` with the database configuration and required instrument
+assignment table:
 
 ```toml
 [database]
@@ -56,11 +61,13 @@ Apply every schema migration:
 uv run elims database upgrade --config bench.toml
 ```
 
-The SQLite path is resolved relative to the configuration file, so a bench can
-be moved as a self-contained directory.
+Relative SQLite paths resolve beside `bench.toml`, so a bench directory remains
+self-contained when it is moved. Loading `Bench` does not create missing tables.
 
 ## Next steps
 
-- Define role assignments in [Bench configuration](bench-configuration.md).
-- Populate records with the [command-line interface](cli.md).
-- Add concrete implementations using [Extending drivers](extending-drivers.md).
+- Populate and inspect records with [Inventory and database](inventory.md) and
+  the [CLI guide](cli.md).
+- Assign those records in [Bench configuration](bench-configuration.md).
+- Check the current [driver support](driver-support.md).
+- Run a real project workflow with [Characterization](characterization.md).

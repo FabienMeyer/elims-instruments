@@ -16,7 +16,11 @@ from elims_instruments.database import (
     VisaConnection,
 )
 from elims_instruments.utils.logger import LOGGER_HELPER, get_logger
-from examples.bench_setup.constants import BENCH_CONFIGURATION
+from examples.bench_setup.constants import (
+    BENCH_CONFIGURATION,
+    BOARD_DRIVER_NAME,
+    PROJECT_DRIVER_NAME,
+)
 from examples.characterization.specifications import create_revision_specifications
 
 logger = get_logger(__name__)
@@ -26,8 +30,7 @@ def main() -> None:
     """Insert or update every resource referenced by the example bench."""
     LOGGER_HELPER.configure()
 
-    instruments = InstrumentCrud(logger, BENCH_CONFIGURATION)
-    try:
+    with InstrumentCrud(logger, BENCH_CONFIGURATION) as instruments:
         instruments.upsert_many(
             [
                 InstrumentModel(
@@ -48,27 +51,21 @@ def main() -> None:
                 ),
             ]
         )
-    finally:
-        instruments.engine.dispose()
-
     board = BoardModel(
         id="demo-characterization-board",
         asset_tag="BRD-001",
-        type="characterization",
+        type=BOARD_DRIVER_NAME,
         maker="ELIMS",
         model="Demo Characterization Board",
         connection=USBConnection(vendor_id=0x1209, product_id=0x0001),
     )
-    boards = BoardCrud(logger, BENCH_CONFIGURATION)
-    try:
+    with BoardCrud(logger, BENCH_CONFIGURATION) as boards:
         boards.upsert_many([board])
-    finally:
-        boards.engine.dispose()
 
     dut = DutModel(
         id="demo-dut",
         asset_tag="DUT-001",
-        project="example-project",
+        project=PROJECT_DRIVER_NAME,
         corner="TT",
         die_revision="A",
         metal_revision=0,
@@ -78,26 +75,20 @@ def main() -> None:
         die_x=12,
         die_y=8,
     )
-    duts = DutCrud(logger, BENCH_CONFIGURATION)
-    try:
+    with DutCrud(logger, BENCH_CONFIGURATION) as duts:
         duts.upsert_many([dut])
-    finally:
-        duts.engine.dispose()
 
     project = ProjectModel(
         id="project-1",
-        internal_name="example-project",
+        internal_name=PROJECT_DRIVER_NAME,
         datasheet_name="Example IC Characterization",
         specifications=[create_revision_specifications()],
     )
     project.supported_boards = [board]
     project.supported_duts = [dut]
 
-    projects = ProjectCrud(logger, BENCH_CONFIGURATION)
-    try:
+    with ProjectCrud(logger, BENCH_CONFIGURATION) as projects:
         projects.upsert_many([project])
-    finally:
-        projects.engine.dispose()
 
     logger.info("Seeded example database: {}", BENCH_CONFIGURATION)
 

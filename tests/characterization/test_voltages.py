@@ -64,3 +64,68 @@ def test_voltages_power_up_and_down_in_sequence() -> None:
         "disable vdda",
         "disable vddd",
     ]
+
+
+def _leaf_error_messages(error: BaseException) -> list[str]:
+    if isinstance(error, BaseExceptionGroup):
+        return [
+            message
+            for nested in error.exceptions
+            for message in _leaf_error_messages(nested)
+        ]
+    return [str(error)]
+
+
+def test_power_up_rolls_back_failing_rail_and_continues_after_cleanup_error() -> None:
+    """A partial enable failure attempts every relevant rollback operation."""
+    events: list[str] = []
+
+    def disable_first() -> None:
+        events.append("disable first")
+        raise OSError("first rollback failed")
+
+    def enable_second() -> None:
+        events.append("enable second")
+        raise RuntimeError("second enable failed")
+
+    first = FixedVoltage(
+        rail_spec("FIRST"),
+        enable=lambda: events.append("enable first"),
+        disable=disable_first,
+    )
+    second = FixedVoltage(
+        rail_spec("SECOND"),
+        enable=enable_second,
+        disable=lambda: events.append("disable second"),
+    )
+
+    with pytest.raises(BaseExceptionGroup) as caught:
+        Voltages([(10, first), (20, second)]).power_up()
+
+    assert events == [
+        "enable first",
+        "enable second",
+        "disable second",
+        "disable first",
+    ]
+    assert _leaf_error_messages(caught.value) == [
+        "second enable failed",
+        "first rollback failed",
+    ]
+
+
+def test_power_sequence_ignores_sources_without_switch_capability() -> None:
+    """Always-on rails remain valid report members without fake callbacks."""
+    events: list[str] = []
+    always_on = FixedVoltage(rail_spec("ALWAYS_ON"))
+    switched = FixedVoltage(
+        rail_spec("SWITCHED"),
+        enable=lambda: events.append("enable"),
+        disable=lambda: events.append("disable"),
+    )
+    voltages = Voltages([(10, always_on), (20, switched)])
+
+    voltages.power_up()
+    voltages.power_down()
+
+    assert events == ["enable", "disable"]

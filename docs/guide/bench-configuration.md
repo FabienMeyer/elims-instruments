@@ -22,7 +22,7 @@ characterization_board = "BRD-001"
 characterized_ic = "DUT-001"
 
 [projects]
-characterization = "demo-project"
+characterization = "example-project"
 ```
 
 The `[instruments]` table is required. Board, DUT, and project tables are

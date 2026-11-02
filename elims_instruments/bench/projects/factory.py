@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from types import MappingProxyType
 from typing import ClassVar
 
+from elims_instruments.bench.factory import (
+    NamedCollection,
+    register_string_builder,
+    resolve_assignments,
+)
 from elims_instruments.database import ProjectCrud, ProjectModel
 from elims_instruments.utils.logger import LoggerHelper, get_logger
 
@@ -31,19 +35,17 @@ class ProjectFactory:
         replace: bool = False,
     ) -> None:
         """Register a specialized builder for a project name."""
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError("Project name must be a non-empty string")
-        if not callable(builder):
-            raise TypeError("Project builder must be callable")
-        normalized_name = name.strip().casefold()
-        registered = cls._registry.get(normalized_name)
-        if registered is builder:
-            return
-        if registered is not None and not replace:
-            raise ValueError(
-                f"Project already has a registered builder: {name!r}"
-            )
-        cls._registry[normalized_name] = builder
+        register_string_builder(
+            cls._registry,
+            name,
+            builder,
+            key_error="Project name must be a non-empty string",
+            builder_error="Project builder must be callable",
+            duplicate_error=lambda key: (
+                f"Project already has a registered builder: {key!r}"
+            ),
+            replace=replace,
+        )
         logger.debug(
             "Registered project builder {} for project {}",
             getattr(builder, "__name__", type(builder).__name__),
@@ -72,31 +74,8 @@ class ProjectFactory:
         return instance
 
 
-class ProjectCollection(Mapping[str, Project]):
+class ProjectCollection(NamedCollection[Project]):
     """Read-only project collection supporting mapping and attribute access."""
-
-    def __init__(self, projects: Mapping[str, Project]) -> None:
-        """Store named project objects in an immutable mapping."""
-        self._projects = MappingProxyType(dict(projects))
-
-    def __getitem__(self, name: str) -> Project:
-        """Return the project assigned to *name*."""
-        return self._projects[name]
-
-    def __iter__(self) -> Iterator[str]:
-        """Iterate over configured project names."""
-        return iter(self._projects)
-
-    def __len__(self) -> int:
-        """Return the number of configured projects."""
-        return len(self._projects)
-
-    def __getattr__(self, name: str) -> Project:
-        """Allow attribute access such as ``projects.characterization``."""
-        try:
-            return self._projects[name]
-        except KeyError as error:
-            raise AttributeError(name) from error
 
 
 def create_projects(
@@ -113,17 +92,14 @@ def create_projects(
         logger.info("Created 0 projects")
         return ProjectCollection({})
 
-    repository = ProjectCrud(logger, configuration, create_tables=False)
-    projects: dict[str, Project] = {}
-    try:
-        for name, project_name in assignments.items():
-            logger.debug("Resolving project {} from name {}", name, project_name)
-            project = repository.fetch("internal_name", project_name)
-            if project is None:
-                raise ProjectNotFoundError(project_name)
-            projects[name] = ProjectFactory.create(project)
-    finally:
-        repository.engine.dispose()
+    with ProjectCrud(logger, configuration, create_tables=False) as repository:
+        projects = resolve_assignments(
+            assignments,
+            repository,
+            lookup_field="internal_name",
+            builder=ProjectFactory.create,
+            not_found=ProjectNotFoundError,
+        )
     collection = ProjectCollection(projects)
     logger.info("Created {} projects", len(collection))
     return collection

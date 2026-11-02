@@ -25,6 +25,15 @@ class FrequencySweep(InnerSweep[RegisterDut]):
     def get_test_id(self) -> str:
         return f"{self.test_id}-{self.iteration}"
 
+    def report_header(self) -> list[str]:
+        return ["iteration", "frequency", "duty_cycle"]
+
+    def report_value(self) -> list[str]:
+        return [str(self.iteration), str(self.frequency), str(self.duty_cycle)]
+
+    def run(self) -> tuple[str, list[str]]:
+        return self.get_test_id(), []
+
 
 class FrequencyMatrix(InnerMatrix[RegisterDut]):
     """Example test matrix with two test-specific arguments."""
@@ -94,3 +103,9 @@ def test_inner_matrix_rejects_invalid_iterations(iterations: int) -> None:
     """Inner matrices require a positive iteration count."""
     with pytest.raises(ValueError, match="iterations must be at least one"):
         FrequencyMatrix(RegisterDut(), iterations, [1_000_000], [0.5])
+
+
+def test_inner_sweep_requires_concrete_report_and_run_behavior() -> None:
+    """Incomplete inner points cannot bypass the abstract sweep contract."""
+    with pytest.raises(TypeError, match="abstract class InnerSweep"):
+        InnerSweep("frequency", RegisterDut(), 1)  # type: ignore[abstract]

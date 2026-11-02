@@ -64,6 +64,10 @@ class Temperature:
         disable: Disable | None = None,
     ) -> None:
         """Initialize the common, validated temperature state."""
+        if (enable is None) != (disable is None):
+            raise ValueError(
+                "Temperature enable and disable callbacks must be provided together"
+            )
         self.name = specification.name
         self.temperature_limits = specification.temperature_limits
         self._temperature_getter = temperature_getter
@@ -109,6 +113,16 @@ class Temperature:
         temperature = self._temperature_getter()
         logger.debug("Measured temperature {!r}: {} °C", self.name, temperature)
         return temperature
+
+    @property
+    def is_readable(self) -> bool:
+        """Return whether the temperature can be measured."""
+        return self._temperature_getter is not None
+
+    @property
+    def is_switchable(self) -> bool:
+        """Return whether the temperature source has complete power control."""
+        return self._enable is not None and self._disable is not None
 
     def enable(self) -> None:
         """Enable the temperature source."""

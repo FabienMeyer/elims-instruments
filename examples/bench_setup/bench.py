@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
 from elims_instruments.bench import Bench
 from elims_instruments.utils.logger import LOGGER_HELPER, get_logger
 from examples.bench_setup.board import ExampleBoard
@@ -15,7 +18,20 @@ from examples.bench_setup.constants import (
 from examples.bench_setup.dut import ExampleDut
 from examples.bench_setup.project import ExampleProject
 
+if TYPE_CHECKING:
+    from elims_instruments.characterization import ProjectRevisionSpecifications
+
 logger = get_logger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class CharacterizationSetup:
+    """Resolved bench resources and revision profile used by the examples."""
+
+    bench: Bench
+    dut: ExampleDut
+    project: ExampleProject
+    specifications: ProjectRevisionSpecifications
 
 
 def create_bench() -> Bench:
@@ -29,24 +45,40 @@ def create_bench() -> Bench:
     )
 
 
+def create_characterization_setup() -> CharacterizationSetup:
+    """Resolve the canonical DUT, project, and revision profile once."""
+    bench = create_bench()
+    dut = bench.duts.characterized_ic
+    if not isinstance(dut, ExampleDut):
+        raise TypeError("The characterized DUT uses an unexpected driver")
+    project = bench.projects.characterization
+    if not isinstance(project, ExampleProject):
+        raise TypeError("The characterization project uses an unexpected driver")
+    return CharacterizationSetup(
+        bench=bench,
+        dut=dut,
+        project=project,
+        specifications=project.specifications_for(dut.dut),
+    )
+
+
 def main() -> None:
     """Resolve database records, build drivers, and print their metadata."""
     LOGGER_HELPER.configure()
 
-    bench = create_bench()
+    setup = create_characterization_setup()
+    bench = setup.bench
 
     board = bench.boards.characterization_board
     assert isinstance(board, ExampleBoard)
 
     logger.info(f"Board ID: {board.get_id()}")
 
-    dut = bench.duts.characterized_ic
-    assert isinstance(dut, ExampleDut)
+    dut = setup.dut
 
     logger.info(f"DUT ID: {dut.get_id()}")
 
-    project = bench.projects.characterization
-    assert isinstance(project, ExampleProject)
+    project = setup.project
 
     logger.info(f"Project ID: {project.get_id()}")
     logger.info(f"Project Description: {project.describe()}")

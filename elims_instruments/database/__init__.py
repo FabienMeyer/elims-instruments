@@ -1,5 +1,7 @@
 """Database models and repositories."""
 
+from elims_instruments.characterization import ProjectRevisionSpecifications
+
 from .board import (
     BoardCrud,
     BoardModel,
@@ -14,7 +16,7 @@ from .connections import (
     USBConnection,
     VisaConnection,
 )
-from .crud import Crud, DatabaseConfigurationError, DuplicateAssetTagError
+from .crud import AssetCrud, Crud, DatabaseConfigurationError, DuplicateAssetTagError
 from .dut import DutCrud, DutModel, parse_dut_list
 from .instrument import (
     CalibrationStatus,
@@ -29,12 +31,12 @@ from .migrations import upgrade_database
 from .project import (
     ProjectCrud,
     ProjectModel,
-    ProjectRevisionSpecifications,
     parse_project_list,
     parse_project_specifications,
 )
 
 __all__ = [
+    "AssetCrud",
     "BoardCrud",
     "BoardModel",
     "CalibrationStatus",

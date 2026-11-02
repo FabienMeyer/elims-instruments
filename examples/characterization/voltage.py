@@ -9,8 +9,13 @@ from elims_instruments.characterization import (
     FixedVoltage,
     VoltageSpecification,
 )
-from elims_instruments.utils import Limits
 from elims_instruments.utils.logger import LOGGER_HELPER, LoggerHelper, get_logger
+from examples.characterization.specifications import (
+    ADJUSTABLE_SUPPLY_NAME,
+    FIXED_SUPPLY_NAME,
+    create_revision_specifications,
+    voltage_specification_for,
+)
 
 logger = get_logger(__name__, LoggerHelper.Color.BLUE)
 
@@ -49,37 +54,62 @@ class SimulatedPowerSupply:
 
 
 def create_adjustable_voltage(
-    name: str = "VDDA",
-    voltage: float = 1.2,
+    specification: VoltageSpecification | None = None,
+    *,
+    supply: SimulatedPowerSupply | None = None,
 ) -> AdjustableVoltage:
     """Create an adjustable rail backed by a simulated power supply."""
-    supply = SimulatedPowerSupply(voltage=voltage)
+    rail = specification or voltage_specification_for(
+        create_revision_specifications(),
+        ADJUSTABLE_SUPPLY_NAME,
+    )
+    current_limit = (
+        0.0
+        if rail.current_limits is None
+        else float(rail.current_limits.typical)
+    )
+    source = supply or SimulatedPowerSupply(
+        voltage=float(rail.voltage_limits.typical),
+        current_limit=current_limit,
+    )
     return AdjustableVoltage(
-        VoltageSpecification(
-            name=name,
-            voltage_limits=Limits(minimum=1.0, typical=1.20, maximum=1.4),
-            current_limits=Limits(minimum=0.0, typical=0.05, maximum=0.10),
-        ),
-        voltage_setter=supply.set_voltage,
-        current_limit_setter=supply.set_current_limit,
-        voltage_getter=supply.measure_voltage,
-        current_getter=supply.measure_current,
-        enable=supply.enable,
-        disable=supply.disable,
+        rail,
+        voltage_setter=source.set_voltage,
+        current_limit_setter=source.set_current_limit,
+        voltage_getter=source.measure_voltage,
+        current_getter=source.measure_current,
+        enable=source.enable,
+        disable=source.disable,
     )
 
 
 def create_fixed_voltage(
-    name: str = "VDDD",
-    voltage: float = 1.8,
+    specification: VoltageSpecification | None = None,
+    *,
+    supply: SimulatedPowerSupply | None = None,
 ) -> FixedVoltage:
     """Create a fixed rail backed by a simulated power supply."""
-    supply = SimulatedPowerSupply(voltage=voltage)
+    rail = specification or voltage_specification_for(
+        create_revision_specifications(),
+        FIXED_SUPPLY_NAME,
+    )
+    limits = rail.voltage_limits
+    if any(
+        value is not None and value != limits.typical
+        for value in (
+            limits.absolute_minimum,
+            limits.minimum,
+            limits.maximum,
+            limits.absolute_maximum,
+        )
+    ):
+        raise ValueError("A fixed voltage specification must use exact limits")
+    source = supply or SimulatedPowerSupply(voltage=float(limits.typical))
     return FixedVoltage(
-        VoltageSpecification(name=name, voltage_limits=Limits.exact(voltage)),
-        voltage_getter=supply.measure_voltage,
-        enable=supply.enable,
-        disable=supply.disable,
+        rail,
+        voltage_getter=source.measure_voltage,
+        enable=source.enable,
+        disable=source.disable,
     )
 
 

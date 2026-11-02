@@ -1,7 +1,8 @@
 # API reference
 
-Choose the package you want to use. API details come directly from its
-docstrings.
+API details are generated directly from source docstrings. Use the user guide
+for workflows and this reference for exact signatures, return values, and
+exceptions.
 
 - [Bench](bench/index.md)
 - [Characterization](characterization/index.md)

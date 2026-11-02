@@ -41,9 +41,8 @@ def test_write_report_preserves_header_and_completed_rows(tmp_path: Path) -> Non
         sections=[
             CsvSection(BenchStub().report_header, BenchStub().report_value),
             CsvSection(empty, empty),
-            CsvSection(empty, empty),
-            CsvSection(lambda: ["current"], lambda: []),
         ],
+        measurement_headers=["current"],
     )
 
     with pytest.raises(RuntimeError, match="header must be written"):
@@ -79,8 +78,8 @@ def test_write_report_accepts_bench_aggregate_columns(tmp_path: Path) -> None:
             CsvSection(BenchStub().report_header, BenchStub().report_value),
             CsvSection(lambda: ["mode"], lambda: ["slow"]),
             CsvSection(lambda: ["iteration"], lambda: ["1"]),
-            CsvSection(lambda: ["current"], lambda: []),
         ],
+        measurement_headers=["current"],
     )
 
     report.write_header()
@@ -104,6 +103,24 @@ def test_write_report_accepts_bench_aggregate_columns(tmp_path: Path) -> None:
             "1",
             "0.12",
         ],
+    ]
+
+
+def test_write_report_accepts_any_number_of_context_sections(tmp_path: Path) -> None:
+    """Report composition is open to empty or extended context schemas."""
+    file = FileHelper(tmp_path, "measurements", FileHelper.FileSuffix.CSV)
+    report = WriteCsvReport(
+        file,
+        sections=[],
+        measurement_headers=["voltage", "current"],
+    )
+
+    report.write_header()
+    report.write_data("TEST-1", "2026_09_19_12_34_56", ["1.2", "0.1"])
+
+    assert read_csv(file.file_path) == [
+        ["test_id", "timestamp", "voltage", "current"],
+        ["TEST-1", "2026_09_19_12_34_56", "1.2", "0.1"],
     ]
 
 

@@ -15,15 +15,15 @@ logger = get_logger(__name__)
 def main() -> None:
     """Load database records, create their drivers, and display them."""
     LOGGER_HELPER.configure()
-    repository = InstrumentCrud(logging.getLogger(__name__), BENCH_CONFIGURATION)
-    try:
+    with InstrumentCrud(
+        logging.getLogger(__name__),
+        BENCH_CONFIGURATION,
+    ) as repository:
         instruments = repository.fetchall()
-    finally:
-        repository.engine.dispose()
 
     for instrument in instruments:
         driver = InstrumentFactory.create(instrument)
-        logger.info(driver.report_value())
+        logger.info("{}", driver.report_value())
 
 if __name__ == "__main__":
     main()

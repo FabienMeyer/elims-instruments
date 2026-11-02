@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from types import MappingProxyType
 from typing import ClassVar
 
+from elims_instruments.bench.factory import (
+    NamedCollection,
+    register_string_builder,
+    resolve_assignments,
+)
 from elims_instruments.database import DutCrud, DutModel
 from elims_instruments.utils.logger import LoggerHelper, get_logger
 
@@ -31,19 +35,17 @@ class DutFactory:
         replace: bool = False,
     ) -> None:
         """Register a specialized builder for a DUT project."""
-        if not isinstance(project, str) or not project.strip():
-            raise ValueError("DUT project must be a non-empty string")
-        if not callable(builder):
-            raise TypeError("DUT builder must be callable")
-        normalized_project = project.strip().casefold()
-        registered = cls._registry.get(normalized_project)
-        if registered is builder:
-            return
-        if registered is not None and not replace:
-            raise ValueError(
-                f"DUT project already has a registered builder: {project!r}"
-            )
-        cls._registry[normalized_project] = builder
+        register_string_builder(
+            cls._registry,
+            project,
+            builder,
+            key_error="DUT project must be a non-empty string",
+            builder_error="DUT builder must be callable",
+            duplicate_error=lambda key: (
+                f"DUT project already has a registered builder: {key!r}"
+            ),
+            replace=replace,
+        )
         logger.debug(
             "Registered DUT builder {} for project {}",
             getattr(builder, "__name__", type(builder).__name__),
@@ -72,31 +74,8 @@ class DutFactory:
         return instance
 
 
-class DutCollection(Mapping[str, Dut]):
+class DutCollection(NamedCollection[Dut]):
     """Read-only DUT collection supporting mapping and attribute access."""
-
-    def __init__(self, duts: Mapping[str, Dut]) -> None:
-        """Store named DUT objects in an immutable mapping."""
-        self._duts = MappingProxyType(dict(duts))
-
-    def __getitem__(self, name: str) -> Dut:
-        """Return the DUT assigned to *name*."""
-        return self._duts[name]
-
-    def __iter__(self) -> Iterator[str]:
-        """Iterate over configured DUT names."""
-        return iter(self._duts)
-
-    def __len__(self) -> int:
-        """Return the number of configured DUTs."""
-        return len(self._duts)
-
-    def __getattr__(self, name: str) -> Dut:
-        """Allow attribute access such as ``duts.characterized_ic``."""
-        try:
-            return self._duts[name]
-        except KeyError as error:
-            raise AttributeError(name) from error
 
 
 def create_duts(
@@ -113,17 +92,14 @@ def create_duts(
         logger.info("Created 0 DUTs")
         return DutCollection({})
 
-    repository = DutCrud(logger, configuration, create_tables=False)
-    duts: dict[str, Dut] = {}
-    try:
-        for name, asset_tag in assignments.items():
-            logger.debug("Resolving DUT {} from asset {}", name, asset_tag)
-            dut = repository.fetch("asset_tag", asset_tag)
-            if dut is None:
-                raise DutAssetNotFoundError(asset_tag)
-            duts[name] = DutFactory.create(dut)
-    finally:
-        repository.engine.dispose()
+    with DutCrud(logger, configuration, create_tables=False) as repository:
+        duts = resolve_assignments(
+            assignments,
+            repository,
+            lookup_field="asset_tag",
+            builder=DutFactory.create,
+            not_found=DutAssetNotFoundError,
+        )
     collection = DutCollection(duts)
     logger.info("Created {} DUTs", len(collection))
     return collection

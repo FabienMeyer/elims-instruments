@@ -129,6 +129,22 @@ def test_temperature_enable_and_disable_use_callbacks() -> None:
     temperature.disable()
 
     assert events == ["enable", "disable"]
+    assert temperature.is_switchable
+
+
+def test_temperature_rejects_partial_power_control() -> None:
+    """Power control is either a complete capability or unavailable."""
+    with pytest.raises(ValueError, match="must be provided together"):
+        Temperature(temperature_specification(), enable=lambda: None)
+
+
+def test_temperature_reports_read_capability() -> None:
+    """Composition code can inspect measurement support before hardware setup."""
+    assert not Temperature(temperature_specification()).is_readable
+    assert Temperature(
+        temperature_specification(),
+        temperature_getter=lambda: 25.0,
+    ).is_readable
 
 
 def test_temperature_power_control_requires_callbacks() -> None:

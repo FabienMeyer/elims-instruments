@@ -36,11 +36,8 @@ ProjectFactory.register(PROJECT_DRIVER_NAME, ExampleProject)
 
 def get_projects() -> list[ProjectModel]:
     """Return every project configured in the example database."""
-    repository = ProjectCrud(logging.getLogger(__name__), BENCH_CONFIGURATION)
-    try:
+    with ProjectCrud(logging.getLogger(__name__), BENCH_CONFIGURATION) as repository:
         projects = repository.fetchall()
-    finally:
-        repository.engine.dispose()
     return projects
 
 def main() -> None:
@@ -50,8 +47,8 @@ def main() -> None:
     for project in get_projects():
         driver = ProjectFactory.create(project)
         for dut in project.supported_duts:
-            logger.info(driver.voltage_specifications_for(dut))
-            logger.info(driver.temperature_specifications_for(dut))
+            logger.info("{}", driver.voltage_specifications_for(dut))
+            logger.info("{}", driver.temperature_specifications_for(dut))
 
 
 if __name__ == "__main__":

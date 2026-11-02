@@ -36,6 +36,16 @@ def repository(tmp_path: Path) -> InstrumentCrud:
     return InstrumentCrud(logging.getLogger(__name__), configuration)
 
 
+def test_repository_context_releases_its_engine(repository, mocker) -> None:
+    """Managed repositories own and release their database engine."""
+    dispose = mocker.spy(repository.engine, "dispose")
+
+    with repository as managed:
+        assert managed is repository
+
+    dispose.assert_called_once_with()
+
+
 def test_socket_instrument_round_trip(repository: InstrumentCrud) -> None:
     """A socket instrument retains its nested connection after persistence."""
     instrument = InstrumentModel(

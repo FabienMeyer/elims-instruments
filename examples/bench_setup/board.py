@@ -37,15 +37,12 @@ BoardFactory.register(BOARD_DRIVER_NAME, ExampleBoard)
 def main() -> None:
     """Load board records, create their drivers, and display them."""
     LOGGER_HELPER.configure()
-    repository = BoardCrud(logging.getLogger(__name__), BENCH_CONFIGURATION)
-    try:
+    with BoardCrud(logging.getLogger(__name__), BENCH_CONFIGURATION) as repository:
         boards = repository.fetchall()
-    finally:
-        repository.engine.dispose()
 
     for board in boards:
         driver = BoardFactory.create(board)
-        logger.info(driver.report_value())
+        logger.info("{}", driver.report_value())
 
 
 if __name__ == "__main__":

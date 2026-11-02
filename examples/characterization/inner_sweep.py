@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from itertools import product
 from typing import TYPE_CHECKING
 
-from elims_instruments.bench import DutFactory
 from elims_instruments.characterization import InnerMatrix, InnerSweep
 from elims_instruments.utils.logger import LOGGER_HELPER, LoggerHelper, get_logger
-from examples.bench_setup.dut import ExampleDut, get_duts
+from examples.bench_setup.bench import create_characterization_setup
+from examples.bench_setup.dut import ExampleDut
 from examples.characterization.outer_sweep import MAIN_BLOCK, create_outer_matrix
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ class BandgapSweep(InnerSweep[ExampleDut]):
 
     def get_test_id(self) -> str:
         """Return the complete ID for this bandgap result."""
-        return f"{self.test_id}-{self.measurement.name}"
+        return f"{self.test_id}-{self.measurement.name}-{self.iteration}"
 
     def report_header(self) -> list[str]:
         """Return the columns describing this inner point."""
@@ -94,18 +94,11 @@ class BandgapSweep(InnerSweep[ExampleDut]):
 def main() -> None:
     """Run every inner test point at every outer operating condition."""
     LOGGER_HELPER.configure()
-    dut = DutFactory.create(get_duts()[0])
-    if not isinstance(dut, ExampleDut):  # pragma: no cover - example configuration
-        raise TypeError("The selected DUT is not configured for this example")
-    for outer_sweep in create_outer_matrix():
-        outer_sweep.set_temperature()
-        outer_sweep.enable_temperature()
-        outer_sweep.set_voltages()
-        outer_sweep.power_up()
-
-        try:
+    setup = create_characterization_setup()
+    for outer_sweep in create_outer_matrix(setup.specifications):
+        with outer_sweep.applied():
             inner_matrix = BandgapMatrix(
-                dut=dut,
+                dut=setup.dut,
                 iterations=2,
                 main_block=outer_sweep.get_test_id(),
                 sub_block=SUB_BLOCK,
@@ -130,9 +123,6 @@ def main() -> None:
                     "Inner sweep: {}",
                     dict(zip(headers, values, strict=True)),
                 )
-        finally:
-            outer_sweep.power_down()
-            outer_sweep.disable_temperature()
 
 
 if __name__ == "__main__":

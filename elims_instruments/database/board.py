@@ -9,7 +9,7 @@ from sqlalchemy import Column
 from sqlmodel import Field, SQLModel
 
 from .connections import Connection, ConnectionType
-from .crud import Crud, DebugLogger
+from .crud import AssetCrud, DebugLogger
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,7 +54,7 @@ def parse_board_list(raw_data: object) -> list[BoardModel]:
     return [BoardModel.model_validate(record) for record in records]
 
 
-class BoardCrud(Crud[BoardModel]):
+class BoardCrud(AssetCrud[BoardModel]):
     """CRUD repository specialized for board records."""
 
     def __init__(

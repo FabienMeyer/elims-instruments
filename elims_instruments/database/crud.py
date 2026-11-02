@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from tomllib import TOMLDecodeError, load
-from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
+from typing import TYPE_CHECKING, Generic, Protocol, Self, TypeVar
 
 from sqlalchemy import event
 from sqlalchemy.engine import URL, make_url
@@ -14,6 +14,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from sqlite3 import Connection as SQLiteConnection
+    from types import TracebackType
 
     from sqlalchemy.engine import Engine
     from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -124,6 +125,24 @@ class Crud(Generic[ModelT]):
         """Return the repository's shared database engine."""
         return self._engine
 
+    def __enter__(self) -> Self:
+        """Return this repository for use as a managed context."""
+        return self
+
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Release the database engine when leaving a managed context."""
+        del exception_type, exception, traceback
+        self.close()
+
+    def close(self) -> None:
+        """Release pooled database connections owned by this repository."""
+        self._engine.dispose()
+
     def _create_engine(self) -> Engine:
         """Create an engine from the database TOML configuration."""
         settings = read_database_settings(self.toml_path)
@@ -157,18 +176,15 @@ class Crud(Generic[ModelT]):
         self.logger.debug(self.add.__name__)
         data = self.model.model_validate(data.model_dump())
         with Session(self.engine) as session:
-            values = data.model_dump()
-            asset_tag = values.get("asset_tag")
-            if isinstance(asset_tag, str):
-                statement = select(self.model).where(
-                    self._column("asset_tag") == asset_tag
-                )
-                if session.exec(statement).first() is not None:
-                    raise DuplicateAssetTagError(asset_tag)
+            self._validate_add(session, data)
             session.add(data)
             session.commit()
             session.refresh(data)
             return data
+
+    def _validate_add(self, session: Session, data: ModelT) -> None:
+        """Validate model-specific constraints before inserting one record."""
+        del session, data
 
     def remove(self, field: str, value: object) -> bool:
         """Delete the first matching row and report whether one was found."""
@@ -202,16 +218,90 @@ class Crud(Generic[ModelT]):
             session.refresh(data)
             return data
 
+    def upsert_many(self, records: Sequence[ModelT]) -> tuple[int, int]:
+        """Insert missing records and fully update existing records by ID."""
+        records = [self.model.model_validate(record.model_dump()) for record in records]
+        identifiers = [record.model_dump()["id"] for record in records]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("The record list contains duplicate IDs")
+
+        created = 0
+        updated = 0
+        with Session(self.engine) as session:
+            self._validate_upsert(session, records, identifiers)
+
+            for incoming in records:
+                identifier = incoming.model_dump()["id"]
+                stored = session.get(self.model, identifier)
+                if stored is None:
+                    session.add(incoming)
+                    created += 1
+                    continue
+
+                for field in self.model.model_fields:
+                    if field != "id":
+                        setattr(stored, field, getattr(incoming, field))
+                session.add(stored)
+                updated += 1
+            session.commit()
+        return created, updated
+
+    def _validate_upsert(
+        self,
+        session: Session,
+        records: Sequence[ModelT],
+        identifiers: Sequence[object],
+    ) -> None:
+        """Validate model-specific constraints before a batch upsert."""
+        del session, records, identifiers
+
+
+class AssetCrud(Crud[ModelT]):
+    """CRUD operations shared only by models that own an asset tag."""
+
+    def _validate_add(self, session: Session, data: ModelT) -> None:
+        """Reject an asset tag already owned by another record."""
+        asset_tag = data.model_dump().get("asset_tag")
+        if not isinstance(asset_tag, str):
+            raise TypeError("Asset records must define a string asset_tag")
+        statement = select(self.model).where(self._column("asset_tag") == asset_tag)
+        if session.exec(statement).first() is not None:
+            raise DuplicateAssetTagError(asset_tag)
+
+    def _validate_upsert(
+        self,
+        session: Session,
+        records: Sequence[ModelT],
+        identifiers: Sequence[object],
+    ) -> None:
+        """Require unique incoming and persisted asset-tag ownership."""
+        asset_tags = [record.model_dump().get("asset_tag") for record in records]
+        if any(not isinstance(asset_tag, str) for asset_tag in asset_tags):
+            raise TypeError("Asset records must define a string asset_tag")
+
+        seen_asset_tags: set[object] = set()
+        for asset_tag in asset_tags:
+            if asset_tag in seen_asset_tags:
+                raise DuplicateAssetTagError(str(asset_tag))
+            seen_asset_tags.add(asset_tag)
+
+        for identifier, asset_tag in zip(identifiers, asset_tags, strict=True):
+            statement = select(self.model).where(
+                self._column("asset_tag") == asset_tag
+            )
+            existing = session.exec(statement).first()
+            if (
+                existing is not None
+                and existing.model_dump().get("id") != identifier
+            ):
+                raise DuplicateAssetTagError(str(asset_tag))
+
     def update_by_asset_tag(
         self,
         asset_tag: str,
         changes: Mapping[str, object],
     ) -> ModelT | None:
-        """Update a record selected by its laboratory asset tag.
-
-        The primary ``id`` is immutable. All changes are validated together before
-        they are persisted.
-        """
+        """Validate and update one laboratory asset selected by its tag."""
         invalid_fields = set(changes) - set(self.model.model_fields)
         if invalid_fields:
             fields = ", ".join(sorted(invalid_fields))
@@ -241,57 +331,3 @@ class Crud(Generic[ModelT]):
             session.commit()
             session.refresh(data)
             return data
-
-    def upsert_many(self, records: Sequence[ModelT]) -> tuple[int, int]:
-        """Insert missing records and fully update existing records by ID."""
-        records = [self.model.model_validate(record.model_dump()) for record in records]
-        identifiers = [record.model_dump()["id"] for record in records]
-        if len(identifiers) != len(set(identifiers)):
-            raise ValueError("The record list contains duplicate IDs")
-        has_asset_tag = "asset_tag" in self.model.model_fields
-        asset_tags = (
-            [record.model_dump()["asset_tag"] for record in records]
-            if has_asset_tag
-            else []
-        )
-        if has_asset_tag:
-            seen_asset_tags: set[object] = set()
-            for asset_tag in asset_tags:
-                if asset_tag in seen_asset_tags:
-                    raise DuplicateAssetTagError(str(asset_tag))
-                seen_asset_tags.add(asset_tag)
-
-        created = 0
-        updated = 0
-        with Session(self.engine) as session:
-            if has_asset_tag:
-                for identifier, asset_tag in zip(
-                    identifiers,
-                    asset_tags,
-                    strict=True,
-                ):
-                    statement = select(self.model).where(
-                        self._column("asset_tag") == asset_tag
-                    )
-                    existing = session.exec(statement).first()
-                    if (
-                        existing is not None
-                        and existing.model_dump()["id"] != identifier
-                    ):
-                        raise DuplicateAssetTagError(str(asset_tag))
-
-            for incoming in records:
-                identifier = incoming.model_dump()["id"]
-                stored = session.get(self.model, identifier)
-                if stored is None:
-                    session.add(incoming)
-                    created += 1
-                    continue
-
-                for field in self.model.model_fields:
-                    if field != "id":
-                        setattr(stored, field, getattr(incoming, field))
-                session.add(stored)
-                updated += 1
-            session.commit()
-        return created, updated

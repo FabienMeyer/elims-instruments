@@ -37,11 +37,8 @@ DutFactory.register(PROJECT_DRIVER_NAME, ExampleDut)
 
 def get_dut(dut_id: str) -> ExampleDut:
     """Load one DUT by database ID and create its runtime driver."""
-    repository = DutCrud(logging.getLogger(__name__), BENCH_CONFIGURATION)
-    try:
+    with DutCrud(logging.getLogger(__name__), BENCH_CONFIGURATION) as repository:
         dut = repository.fetch("id", dut_id)
-    finally:
-        repository.engine.dispose()
 
     if dut is None:
         raise LookupError(f"DUT not found: {dut_id}")
@@ -54,11 +51,8 @@ def get_dut(dut_id: str) -> ExampleDut:
 
 def get_duts() -> list[DutModel]:
     """Load every persisted DUT record."""
-    repository = DutCrud(logging.getLogger(__name__), BENCH_CONFIGURATION)
-    try:
+    with DutCrud(logging.getLogger(__name__), BENCH_CONFIGURATION) as repository:
         duts = repository.fetchall()
-    finally:
-        repository.engine.dispose()
     return duts
 
 def main() -> None:
@@ -67,7 +61,7 @@ def main() -> None:
 
     for dut in get_duts():
         driver = DutFactory.create(dut)
-        logger.info(driver.report_value())
+        logger.info("{}", driver.report_value())
 
 if __name__ == "__main__":
     main()

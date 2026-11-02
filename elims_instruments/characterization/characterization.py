@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
-    from elims_instruments.bench import Bench
     from elims_instruments.bench.duts import Dut
+    from elims_instruments.characterization.interfaces import Reportable
     from elims_instruments.characterization.sweeps import (
         InnerMatrix,
         InnerSweep,
@@ -30,7 +30,7 @@ class Characterization(Generic[DutT]):
     def __init__(
         self,
         file_helper: FileHelper,
-        bench: Bench,
+        bench: Reportable,
         outer_matrix: OuterMatrix,
         inner_matrix: InnerMatrix[DutT],
         measurement_headers: Sequence[str],
@@ -58,11 +58,8 @@ class Characterization(Generic[DutT]):
                     self._current_inner.report_header,
                     lambda: self._current_inner.report_value(),
                 ),
-                CsvSection(
-                    lambda: list(self.measurement_headers),
-                    lambda: [],
-                ),
             ],
+            measurement_headers=self.measurement_headers,
         )
 
     def outer_run(self) -> Path:
@@ -70,15 +67,9 @@ class Characterization(Generic[DutT]):
         self.report.write_header()
         for outer_sweep in self.outer_matrix:
             self._current_outer = outer_sweep
-            try:
-                outer_sweep.set_temperature()
-                outer_sweep.enable_temperature()
-                outer_sweep.set_voltages()
-                outer_sweep.power_up()
+            outer_sweep.validate_report_capabilities()
+            with outer_sweep.applied():
                 self.inner_run()
-            finally:
-                outer_sweep.power_down()
-                outer_sweep.disable_temperature()
         return self.report.file.file_path
 
     def inner_run(self) -> Path:

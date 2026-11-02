@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from types import MappingProxyType
 from typing import ClassVar
 
+from elims_instruments.bench.factory import NamedCollection, resolve_assignments
+from elims_instruments.bench.instruments.abstract import Instrument
 from elims_instruments.bench.instruments.counter import create_counter
-from elims_instruments.bench.instruments.counter.abstract import Counter
 from elims_instruments.bench.instruments.multimeter import create_multimeter
-from elims_instruments.bench.instruments.multimeter.abstract import Multimeter
 from elims_instruments.bench.instruments.power_supply import create_power_supply
-from elims_instruments.bench.instruments.power_supply.abstract import PowerSupply
 from elims_instruments.bench.instruments.thermal_test_system import (
-    ThermalTestSystem,
     create_thermal_test_system,
 )
 from elims_instruments.database import InstrumentCrud, InstrumentModel, InstrumentType
@@ -22,8 +19,7 @@ from elims_instruments.utils.logger import LoggerHelper, get_logger
 
 from .error import InstrumentAssetNotFoundError, UnsupportedInstrumentTypeError
 
-InstrumentDriver = Multimeter | Counter | PowerSupply | ThermalTestSystem
-InstrumentBuilder = Callable[[InstrumentModel], InstrumentDriver]
+InstrumentBuilder = Callable[[InstrumentModel], Instrument]
 logger = get_logger(__name__, LoggerHelper.Color.CYAN)
 
 
@@ -61,7 +57,7 @@ class InstrumentFactory:
         )
 
     @classmethod
-    def create(cls, instrument: InstrumentModel) -> InstrumentDriver:
+    def create(cls, instrument: InstrumentModel) -> Instrument:
         """Create a driver using the factory registered for the model's type."""
         logger.debug(
             "Selecting driver for asset {} with type {}",
@@ -76,10 +72,7 @@ class InstrumentFactory:
                 cls._registry,
             ) from error
         driver = builder(instrument)
-        if not isinstance(
-            driver,
-            (Multimeter, Counter, PowerSupply, ThermalTestSystem),
-        ):
+        if not isinstance(driver, Instrument):
             raise TypeError("Instrument builders must return an instrument driver")
         logger.debug(
             "Created {} driver for asset {}",
@@ -98,31 +91,8 @@ InstrumentFactory.register(
 )
 
 
-class InstrumentCollection(Mapping[str, InstrumentDriver]):
+class InstrumentCollection(NamedCollection[Instrument]):
     """Read-only collection supporting mapping and attribute access."""
-
-    def __init__(self, instruments: Mapping[str, InstrumentDriver]) -> None:
-        """Store the named drivers in an immutable mapping."""
-        self._drivers = MappingProxyType(dict(instruments))
-
-    def __getitem__(self, name: str) -> InstrumentDriver:
-        """Return the driver assigned to *name*."""
-        return self._drivers[name]
-
-    def __iter__(self) -> Iterator[str]:
-        """Iterate over configured script names."""
-        return iter(self._drivers)
-
-    def __len__(self) -> int:
-        """Return the number of configured instruments."""
-        return len(self._drivers)
-
-    def __getattr__(self, name: str) -> InstrumentDriver:
-        """Allow attribute access such as ``instruments.primary_dmm``."""
-        try:
-            return self._drivers[name]
-        except KeyError as error:
-            raise AttributeError(name) from error
 
 
 def create_instruments(
@@ -139,17 +109,14 @@ def create_instruments(
         logger.info("Created 0 instrument drivers")
         return InstrumentCollection({})
 
-    repository = InstrumentCrud(logger, configuration, create_tables=False)
-    instruments: dict[str, InstrumentDriver] = {}
-    try:
-        for name, asset_tag in assignments.items():
-            logger.debug("Resolving bench instrument {} from asset {}", name, asset_tag)
-            instrument = repository.fetch("asset_tag", asset_tag)
-            if instrument is None:
-                raise InstrumentAssetNotFoundError(asset_tag)
-            instruments[name] = InstrumentFactory.create(instrument)
-    finally:
-        repository.engine.dispose()
+    with InstrumentCrud(logger, configuration, create_tables=False) as repository:
+        instruments = resolve_assignments(
+            assignments,
+            repository,
+            lookup_field="asset_tag",
+            builder=InstrumentFactory.create,
+            not_found=InstrumentAssetNotFoundError,
+        )
     collection = InstrumentCollection(instruments)
     logger.info("Created {} instrument drivers", len(collection))
     return collection

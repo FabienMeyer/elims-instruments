@@ -108,6 +108,12 @@ def resources(configuration: Path) -> tuple[DutModel, DutModel, BoardModel]:
     return first_dut, second_dut, board
 
 
+def test_project_repository_excludes_asset_only_operations(configuration: Path) -> None:
+    """Project repositories do not expose updates by laboratory asset tag."""
+    with ProjectCrud(logging.getLogger(__name__), configuration) as repository:
+        assert not hasattr(repository, "update_by_asset_tag")
+
+
 @pytest.fixture
 def repository(configuration: Path) -> ProjectCrud:
     """Create a project repository."""

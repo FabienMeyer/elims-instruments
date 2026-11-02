@@ -7,6 +7,11 @@ from dataclasses import dataclass
 from elims_instruments.characterization import Temperature, TemperatureSpecification
 from elims_instruments.utils import Limits
 from elims_instruments.utils.logger import LOGGER_HELPER, LoggerHelper, get_logger
+from examples.characterization.specifications import (
+    DUT_TEMPERATURE_NAME,
+    create_revision_specifications,
+    temperature_specification_for,
+)
 
 logger = get_logger(__name__, LoggerHelper.Color.RED)
 
@@ -51,20 +56,17 @@ def create_ambient_temperature() -> Temperature:
 
 def create_adjustable_temperature(
     chamber: SimulatedThermalChamber | None = None,
+    *,
+    specification: TemperatureSpecification | None = None,
 ) -> Temperature:
     """Create the adjustable DUT temperature around a simulated chamber."""
     source = chamber or SimulatedThermalChamber()
+    condition = specification or temperature_specification_for(
+        create_revision_specifications(),
+        DUT_TEMPERATURE_NAME,
+    )
     return Temperature(
-        TemperatureSpecification(
-            name="DUT",
-            temperature_limits=Limits(
-                absolute_minimum=-55,
-                minimum=-40,
-                typical=25,
-                maximum=125,
-                absolute_maximum=150,
-            ),
-        ),
+        condition,
         temperature_getter=source.measure_temperature,
         temperature_setter=source.set_temperature,
         enable=source.enable,

@@ -3,7 +3,7 @@
 ## Install development dependencies
 
 ```powershell
-uv sync --frozen
+uv sync --frozen --all-extras
 ```
 
 The lockfile supplies Ruff, Mypy, Pytest, MkDocs Material, and mkdocstrings.
@@ -11,12 +11,14 @@ The lockfile supplies Ruff, Mypy, Pytest, MkDocs Material, and mkdocstrings.
 ## Run quality checks
 
 ```powershell
-uv run ruff format --check elims_instruments tests examples
-uv run ruff check elims_instruments tests examples
-uv run mypy elims_instruments
-uv run pytest
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy elims_instruments/
+uv run pytest --cov=elims_instruments --cov-report=term-missing --cov-fail-under=85 -m "not slow and not integration"
 uv run mkdocs build --strict
 ```
+
+CI runs tests on Python 3.11 and 3.12. The remaining checks use Python 3.11.
 
 The documentation build is strict both locally and in CI: missing navigation
 entries, invalid links, unresolved API objects, and other warnings fail the job.
@@ -49,6 +51,10 @@ uv run elims database upgrade --config bench.toml
 - Write task-oriented instructions in the user guide.
 - Keep architecture pages conceptual and decision-focused.
 - Put Python API details in docstrings and render them with mkdocstrings.
+- Link to one canonical guide instead of copying model fields, command options,
+  or lifecycle rules between pages.
+- Treat executable examples and `elims ... --help` as the sources of truth for
+  sample workflows and exhaustive CLI options.
 - Use relative links for pages within this site.
 - Include language identifiers on fenced code blocks.
 - Add every Markdown page to `nav` so strict builds remain intentional.

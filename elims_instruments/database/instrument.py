@@ -15,7 +15,7 @@ from .connections import (
     Connection,
     ConnectionType,
 )
-from .crud import Crud, DebugLogger
+from .crud import AssetCrud, DebugLogger
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -206,7 +206,7 @@ def parse_instrument_list(raw_data: object) -> list[InstrumentModel]:
     return [InstrumentModel.model_validate(record) for record in records]
 
 
-class InstrumentCrud(Crud[InstrumentModel]):
+class InstrumentCrud(AssetCrud[InstrumentModel]):
     """CRUD repository specialized for instrument records."""
 
     def __init__(

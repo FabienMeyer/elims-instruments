@@ -166,6 +166,28 @@ def test_voltage_power_control_requires_callbacks() -> None:
         voltage.disable()
 
 
+def test_voltage_rejects_partial_power_control() -> None:
+    """Power control is either a complete capability or unavailable."""
+    with pytest.raises(ValueError, match="must be provided together"):
+        FixedVoltage(rail_spec("VDDD"), enable=lambda: None)
+
+
+def test_voltage_reports_read_and_switch_capabilities() -> None:
+    """Composition code can validate capabilities before changing hardware."""
+    passive = FixedVoltage(rail_spec("PASSIVE"))
+    controlled = FixedVoltage(
+        rail_spec("CONTROLLED"),
+        voltage_getter=lambda: 1.2,
+        enable=lambda: None,
+        disable=lambda: None,
+    )
+
+    assert not passive.is_readable
+    assert not passive.is_switchable
+    assert controlled.is_readable
+    assert controlled.is_switchable
+
+
 def test_adjustable_voltage_applies_setpoints() -> None:
     """An adjustable rail sends only explicit requests to its instrument."""
     applied: list[float] = []

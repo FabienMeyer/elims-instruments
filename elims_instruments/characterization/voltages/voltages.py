@@ -2,6 +2,8 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, fields
 from typing import TypeAlias
 
+from elims_instruments.characterization._lifecycle import raise_lifecycle_errors
+
 from .abstract import AdjustableVoltage, FixedVoltage
 
 VoltageSource: TypeAlias = FixedVoltage | AdjustableVoltage
@@ -90,25 +92,47 @@ class Voltages:
             values.extend(voltage.report_value())
         return values
 
+    def unreadable_names(self) -> tuple[str, ...]:
+        """Return rails that cannot provide the report values they declare."""
+        return tuple(
+            voltage.name for _, voltage in self._ordered if not voltage.is_readable
+        )
+
     def power_up(self) -> None:
-        """Enable rails in ascending order."""
-        enabled: list[VoltageSource] = []
+        """Enable switchable rails in order and roll back every attempted rail."""
+        attempted: list[VoltageSource] = []
         try:
             for _, voltage in self._ordered:
+                if not voltage.is_switchable:
+                    continue
+                attempted.append(voltage)
                 voltage.enable()
-                enabled.append(voltage)
-        except Exception:
-            for voltage in reversed(enabled):
-                voltage.disable()
-            raise
+        except BaseException as operation_error:
+            cleanup_errors: list[BaseException] = []
+            for voltage in reversed(attempted):
+                try:
+                    voltage.disable()
+                except BaseException as cleanup_error:
+                    cleanup_errors.append(cleanup_error)
+            raise_lifecycle_errors(
+                "Voltage power-up failed and rollback was incomplete",
+                operation_error,
+                cleanup_errors,
+            )
 
     def power_down(self) -> None:
-        """Disable rails in reverse power-up order."""
-        errors: list[Exception] = []
+        """Disable every switchable rail in reverse power-up order."""
+        errors: list[BaseException] = []
         for _, voltage in reversed(self._ordered):
+            if not voltage.is_switchable:
+                continue
             try:
                 voltage.disable()
-            except Exception as error:
+            except BaseException as error:
                 errors.append(error)
         if errors:
-            raise ExceptionGroup("One or more voltage rails failed to disable", errors)
+            raise_lifecycle_errors(
+                "One or more voltage rails failed to disable",
+                None,
+                errors,
+            )

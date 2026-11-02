@@ -1,7 +1,6 @@
 """Tests for the database-backed DUT example helper."""
 
 import pytest
-
 from examples.bench_setup.dut import ExampleDut, get_dut
 
 

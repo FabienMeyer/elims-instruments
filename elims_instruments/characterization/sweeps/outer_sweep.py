@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from itertools import product
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
+from elims_instruments.characterization._lifecycle import raise_lifecycle_errors
 from elims_instruments.characterization.voltages import AdjustableVoltage, Voltages
 
 if TYPE_CHECKING:
@@ -80,6 +82,21 @@ class OuterSweep:
             ]
         return [*values, *self.voltages.report_value()]
 
+    def validate_report_capabilities(self) -> None:
+        """Reject missing measurement callbacks before changing hardware state."""
+        if self.temperature is not None and not self.temperature.is_readable:
+            raise ValueError(
+                f"Temperature {self.temperature.name!r} cannot be reported because "
+                "its getter is not configured"
+            )
+        unreadable_voltages = self.voltages.unreadable_names()
+        if unreadable_voltages:
+            names = ", ".join(repr(name) for name in unreadable_voltages)
+            raise ValueError(
+                f"Voltages {names} cannot be reported because their getters are "
+                "not configured"
+            )
+
     def get_test_id(self) -> str:
         """Return the main test ID for this operating point."""
         return self.test_id
@@ -101,11 +118,14 @@ class OuterSweep:
 
     def set_voltages(self) -> None:
         """Apply the voltage setpoints to the DUT."""
+        validated: list[tuple[AdjustableVoltage, float]] = []
         for name, setpoint in self.voltage_setpoints.as_dict().items():
             voltage = self.voltages[name]
             if not isinstance(voltage, AdjustableVoltage):  # pragma: no cover
                 raise TypeError(f"Voltage {name!r} is not adjustable")
-            voltage.set_voltage(float(setpoint))
+            validated.append((voltage, voltage.validate_setpoint(setpoint)))
+        for voltage, setpoint in validated:
+            voltage.set_voltage(setpoint)
 
     def power_up(self) -> None:
         """Enable all voltage sources for the DUT."""
@@ -114,3 +134,41 @@ class OuterSweep:
     def power_down(self) -> None:
         """Disable all voltage sources for the DUT."""
         self.voltages.power_down()
+
+    @contextmanager
+    def applied(self) -> Iterator[Self]:
+        """Apply this operating point and always attempt complete cleanup."""
+        operation_error: BaseException | None = None
+        cleanup_errors: list[BaseException] = []
+        temperature_activation_attempted = False
+        voltage_activation_attempted = False
+
+        try:
+            self.set_temperature()
+            if self.temperature is not None and self.temperature.is_switchable:
+                temperature_activation_attempted = True
+                self.enable_temperature()
+            self.set_voltages()
+            voltage_activation_attempted = True
+            self.power_up()
+            yield self
+        except BaseException as error:
+            operation_error = error
+
+        if voltage_activation_attempted:
+            try:
+                self.power_down()
+            except BaseException as error:
+                cleanup_errors.append(error)
+        if temperature_activation_attempted:
+            try:
+                self.disable_temperature()
+            except BaseException as error:
+                cleanup_errors.append(error)
+
+        if operation_error is not None or cleanup_errors:
+            raise_lifecycle_errors(
+                "Operating-point execution or cleanup failed",
+                operation_error,
+                cleanup_errors,
+            )

@@ -12,7 +12,7 @@ from elims_instruments.characterization.revisions import (  # noqa: TC001
     PackageRevision,
 )
 
-from .crud import Crud, DebugLogger
+from .crud import AssetCrud, DebugLogger
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -60,7 +60,7 @@ def parse_dut_list(raw_data: object) -> list[DutModel]:
     return [DutModel.model_validate(record) for record in records]
 
 
-class DutCrud(Crud[DutModel]):
+class DutCrud(AssetCrud[DutModel]):
     """CRUD repository specialized for DUT records."""
 
     def __init__(

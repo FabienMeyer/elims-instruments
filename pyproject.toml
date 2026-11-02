@@ -111,7 +111,14 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 show_error_codes = true
-files = ["elims_instruments"]
+files = ["elims_instruments", "examples"]
+follow_imports_for_stubs = true
+
+# NumPy's installed stubs use Python 3.12 syntax. The project does not expose
+# NumPy types, so skip that transitive stub while retaining Python 3.11 checks.
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*"]
+follow_imports = "skip"
 
 # ---------------------------------------------------------------------------
 # Pytest
